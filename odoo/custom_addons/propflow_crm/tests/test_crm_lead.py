@@ -38,6 +38,12 @@ class TestPropflowLead(TransactionCase):
         self._lead()
         self._lead()
 
+    def test_automation_defaults_to_active_and_can_be_paused(self):
+        lead = self._lead(user_id=self.rep.id)  # reps edit their own leads
+        self.assertEqual(lead.propflow_automation, "active")
+        lead.with_user(self.rep).write({"propflow_automation": "paused"})
+        self.assertEqual(lead.propflow_automation, "paused")
+
     def test_integration_can_create_read_write_but_not_delete(self):
         lead = self._lead(propflow_correlation_id="cid-2", propflow_bedrooms="0",
                           propflow_property_type="studio", user_id=self.rep.id)

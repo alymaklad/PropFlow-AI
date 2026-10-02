@@ -120,3 +120,80 @@ def render(template: str, data: dict) -> tuple[str, str]:
     if missing:
         raise TemplateError(f"{template} needs {', '.join(missing)}")
     return fn(data)
+
+
+
+# --- internal notifications (to salespeople and managers; no opt-out line) -------------------
+
+REASON_LABELS = {
+    "injection_suspected": "the message contained instructions aimed at the system",
+    "conflicting_requirements": "the requirements contradict each other",
+    "customer_requested_human": "the customer asked to speak to a person",
+    "unsupported_language": "the inquiry is not in English",
+    "out_of_scope_rental": "the customer wants to rent",
+    "low_confidence": "the AI was not confident about the extraction",
+    "ai_unavailable": "AI qualification was unavailable",
+    "ai_output_invalid": "the AI output could not be validated",
+    "no_matching_property": "no listing in the catalog fits",
+}
+NEXT_STEPS = {
+    "injection_suspected": "Review the message carefully before replying.",
+    "conflicting_requirements": "Call the customer to clarify what they need.",
+    "customer_requested_human": "Call the customer: they asked for a person.",
+    "unsupported_language": "Reply in the customer's language.",
+    "out_of_scope_rental": "Refer the customer or decline politely: we only handle sales.",
+    "low_confidence": "Read the inquiry and qualify it yourself.",
+    "ai_unavailable": "Read the inquiry and qualify it yourself.",
+    "ai_output_invalid": "Read the inquiry and qualify it yourself.",
+    "no_matching_property": "Discuss alternatives (area, budget, type) with the customer.",
+}
+
+
+def reason_text(reasons: list[str]) -> str:
+    return "; ".join(REASON_LABELS.get(r, r.replace("_", " ")) for r in reasons) or "review needed"
+
+
+def next_steps(reasons: list[str]) -> list[str]:
+    steps = []
+    for r in reasons:
+        step = NEXT_STEPS.get(r)
+        if step and step not in steps:
+            steps.append(step)
+    return steps or ["Contact the customer."]
+
+
+def _internal_handoff(d: dict) -> tuple[str, str]:
+    lines = [f"Hi {first_name(d['owner_name'])},", "",
+             f"PropFlow handed lead #{d['lead_id']} to you: {reason_text(d['reasons'])}.",
+             f"Please contact the customer by {d['contact_by']}. Automatic messages are paused.",
+             "", "Suggested next step:", *[f"- {s}" for s in next_steps(d["reasons"])], "",
+             f"Open the lead: {d['lead_url']}", "-- PropFlow"]
+    return f"[PropFlow] Handoff: lead #{d['lead_id']} needs you", "\n".join(lines)
+
+
+def _internal_reminder(d: dict) -> tuple[str, str]:
+    lines = [f"Hi {first_name(d['owner_name'])},", "",
+             f"Lead #{d['lead_id']} was handed to you and the contact deadline "
+             f"({d['contact_by']}) has passed.",
+             "Mark the 'PropFlow handoff' activity done in Odoo once you have contacted the "
+             "customer.", "", f"Open the lead: {d['lead_url']}", "-- PropFlow"]
+    return f"[PropFlow] Reminder: lead #{d['lead_id']} is waiting", "\n".join(lines)
+
+
+def _internal_overdue(d: dict) -> tuple[str, str]:
+    lines = [f"Hi {first_name(d['manager_name'])},", "",
+             f"Lead #{d['lead_id']} was handed to {d['owner_name']} "
+             f"({reason_text(d['reasons'])}) and has not been actioned since {d['contact_by']}.",
+             "Please follow up or reassign it.", "", f"Open the lead: {d['lead_url']}",
+             "-- PropFlow"]
+    return f"[PropFlow] Overdue handoff: lead #{d['lead_id']}", "\n".join(lines)
+
+
+TEMPLATES.update({
+    "internal_handoff": (_internal_handoff, ("owner_name", "lead_id", "reasons", "contact_by",
+                                             "lead_url")),
+    "internal_handoff_reminder": (_internal_reminder, ("owner_name", "lead_id", "contact_by",
+                                                       "lead_url")),
+    "internal_handoff_overdue": (_internal_overdue, ("manager_name", "owner_name", "lead_id",
+                                                     "reasons", "contact_by", "lead_url")),
+})

@@ -71,25 +71,34 @@ def claim_outbound(body: OutboundClaimRequest,
     return claim_message(conn, body.lead_ref, body.channel, body.template, body.sequence_no)
 
 
+def prepare(conn: psycopg.Connection, *, lead_ref: str, to_email: str | None,
+            contact_keys: list[str], template: str, sequence_no: int, data: dict,
+            check_consent: bool = True) -> PrepareOut:
+    """Consent check (customer messages), render, at-most-once claim. Raises TemplateError."""
+    if not to_email:
+        return PrepareOut(send=False, reason="no_email")
+    if check_consent and opted_out(conn, [to_email, *contact_keys], "email"):
+        return PrepareOut(send=False, reason="opted_out")
+    subject, text = render(template, data)
+    claim = claim_message(conn, lead_ref, "email", template, sequence_no)
+    if not claim.send:
+        return PrepareOut(send=False, message_id=claim.message_id,
+                          reason="already_sent" if claim.status == "sent" else claim.status)
+    return PrepareOut(send=True, message_id=claim.message_id, to=to_email, subject=subject,
+                      text=text, template_version=TEMPLATE_VERSION)
+
+
 @router.post("/messages/prepare", response_model=PrepareOut)
 def prepare_message(body: PrepareRequest,
                     conn: psycopg.Connection = Depends(get_db)) -> PrepareOut:
     """The single path for customer messages: consent check, at-most-once claim, render.
     Send only when `send` is true, then report the outcome on /v1/outbound/{id}/status."""
-    if not body.to_email:
-        return PrepareOut(send=False, reason="no_email")
-    if opted_out(conn, [body.to_email, *body.contact_keys], "email"):
-        return PrepareOut(send=False, reason="opted_out")
     try:
-        subject, text = render(body.template, body.data)
+        return prepare(conn, lead_ref=body.lead_ref, to_email=body.to_email,
+                       contact_keys=body.contact_keys, template=body.template,
+                       sequence_no=body.sequence_no, data=body.data)
     except TemplateError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
-    claim = claim_message(conn, body.lead_ref, "email", body.template, body.sequence_no)
-    if not claim.send:
-        return PrepareOut(send=False, message_id=claim.message_id,
-                          reason="already_sent" if claim.status == "sent" else claim.status)
-    return PrepareOut(send=True, message_id=claim.message_id, to=body.to_email,
-                      subject=subject, text=text, template_version=TEMPLATE_VERSION)
 
 
 @router.post("/consents", status_code=204)
@@ -106,6 +115,12 @@ def record_consent(body: ConsentRequest, conn: psycopg.Connection = Depends(get_
                 """,
                 (key, body.channel, body.status, body.source),
             )
+        if body.status == "opted_out":
+            keys = [k.strip().lower() for k in body.contact_keys if k]
+            conn.execute(
+                "UPDATE followup_sequences SET status = 'stopped', stop_reason = 'opted_out'"
+                " WHERE status = 'active' AND (lower(to_email) = ANY(%s) OR contact_keys && %s)",
+                (keys, keys))
 
 
 @router.post("/outbound/{message_id}/status")

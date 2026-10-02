@@ -56,6 +56,11 @@ class CrmLead(models.Model):
          ("sync_error", "Sync error")],
         "Exception status", default="none", index=True,
     )
+    propflow_automation = fields.Selection(
+        [("active", "Active"), ("paused", "Paused")], "PropFlow automation", default="active",
+        index=True,
+        help="Pause to stop PropFlow's automatic customer follow-ups for this lead.",
+    )
     propflow_last_contact = fields.Datetime("Last contact")
     propflow_next_followup = fields.Date("Next follow-up")
 

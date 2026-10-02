@@ -14,14 +14,21 @@ def _matches(record: dict, domain: list) -> bool:
         else:
             field, op, value = token
             actual = record.get(field)
-            stack.append(actual == value if op == "=" else
-                         actual is not None and actual < value)
+            if op == "=":
+                stack.append(actual == value)
+            elif op == "in":
+                stack.append(actual in value)
+            else:
+                stack.append(actual is not None and actual < value)
     return all(stack)
 
 
 class FakeOdoo:
+    MANAGER_ID = 99
+
     def __init__(self, members=(10, 11, 12), team_id=1):
         self.team_id = team_id
+        self.done_activities: set[int] = set()
         self.members = list(members)
         self.leads: dict[int, dict] = {}
         self.notes: list[tuple[int, str]] = []
@@ -32,19 +39,27 @@ class FakeOdoo:
 
     def search_read(self, model, domain, fields, limit=None, order=None, context=None):
         if model == "crm.team":
-            return [{"id": self.team_id}]
+            return [{"id": self.team_id, "user_id": [self.MANAGER_ID, "Manager"]}]
+        if model == "mail.activity":
+            ((_, _, ids),) = domain
+            live = {a["id"] for a in self.activities.values()} - self.done_activities
+            return [{"id": i} for i in ids if i in live]
         if model == "crm.team.member":
             return [{"user_id": [uid, f"Rep {uid}"]} for uid in self.members]
         if model == "res.users":
             (_, _, uid), = domain
-            return [{"name": f"Rep {uid}", "email": f"rep{uid}@example.com"}] \
-                if uid in self.members else []
+            if uid == self.MANAGER_ID:
+                return [{"name": "Sales Manager", "email": "manager@example.com",
+                         "phone": False}]
+            return [{"name": f"Rep {uid}", "email": f"rep{uid}@example.com",
+                     "phone": f"+20 2 0000 00{uid}"}] if uid in self.members else []
         assert model == "crm.lead", model
         found = [lead for lead in self.leads.values() if _matches(lead, domain)
                  and (lead["active"] or (context or {}).get("active_test") is False)]
         if order == "create_date desc":
             found.sort(key=lambda r: r["create_date"], reverse=True)
-        return [{f: r.get(f) for f in fields} for r in found[:limit]]
+        # Like Odoo, search_read always includes the id.
+        return [{"id": r["id"], **{f: r.get(f) for f in fields}} for r in found[:limit]]
 
     def execute(self, model, method, *args, **kwargs):
         assert model == "crm.lead", model
@@ -75,7 +90,8 @@ class FakeOdoo:
         stored = dict(values)
         for key in ("user_id", "team_id"):
             if key in stored:
-                stored[key] = [stored[key], "x"] if stored[key] else False
+                label = f"Rep {stored[key]}" if key == "user_id" else f"Team {stored[key]}"
+                stored[key] = [stored[key], label] if stored[key] else False
         return stored
 
     def _create(self, values: dict) -> int:
@@ -83,7 +99,8 @@ class FakeOdoo:
         if cid and any(lead.get("propflow_correlation_id") == cid for lead in self.leads.values()):
             raise OdooDuplicateError("PropFlow correlation ID already exists")
         lead_id = next(self._ids)
-        record = {"id": lead_id, "active": True, "probability": 10,
+        record = {"id": lead_id, "active": True, "probability": 10, "type": "lead",
+                  "propflow_automation": "active", "propflow_exception_status": "none",
                   "create_date": next(self._clock), **self._store(values)}
         record["phone_sanitized"] = record.get("phone") or None
         record["email_normalized"] = (record.get("email_from") or "").lower() or None

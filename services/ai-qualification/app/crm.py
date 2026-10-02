@@ -205,3 +205,27 @@ def schedule_followup(odoo: OdooClient, *, lead_id: int, user_id: int, priority:
         deadline.isoformat(), f"PropFlow {priority}-priority lead: contact the customer.",
     )  # also sets the lead's next follow-up date, in the same transaction
     return activity_id, deadline
+
+
+
+def lead_url(public_url: str, lead_id: int) -> str:
+    return f"{public_url.rstrip('/')}/web#id={lead_id}&model=crm.lead&view_type=form"
+
+
+def fetch_owner(odoo: OdooClient, user_id: int | None) -> dict | None:
+    """Name, email and phone of an Odoo user (phone from the user's contact)."""
+    if not user_id:
+        return None
+    users = odoo.search_read("res.users", [("id", "=", user_id)], ["name", "email", "phone"])
+    if not users:
+        return None
+    u = users[0]
+    return {"id": user_id, "name": u["name"], "email": u.get("email") or None,
+            "phone": u.get("phone") or None}
+
+
+def team_manager(odoo: OdooClient, team_id: int | None) -> dict | None:
+    if not team_id:
+        return None
+    teams = odoo.search_read("crm.team", [("id", "=", team_id)], ["user_id"])
+    return fetch_owner(odoo, _m2o_id(teams[0]["user_id"])) if teams else None

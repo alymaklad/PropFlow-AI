@@ -23,6 +23,7 @@
                             <field name="propflow_score"/>
                             <field name="propflow_rules_version"/>
                             <field name="propflow_exception_status"/>
+                            <field name="propflow_automation" widget="radio" options="{'horizontal': true}"/>
                             <field name="propflow_last_contact"/>
                             <field name="propflow_next_followup"/>
                             <field name="propflow_source"/>
@@ -62,6 +63,8 @@
                         domain="[('propflow_priority', '=', 'high')]"/>
                 <filter string="PropFlow: handed off" name="propflow_handoff"
                         domain="[('propflow_exception_status', '=', 'handoff')]"/>
+                <filter string="PropFlow: automation paused" name="propflow_paused"
+                        domain="[('propflow_automation', '=', 'paused')]"/>
                 <filter string="PropFlow priority" name="group_propflow_priority"
                         context="{'group_by': 'propflow_priority'}"/>
             </xpath>

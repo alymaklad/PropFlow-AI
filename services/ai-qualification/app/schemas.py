@@ -1,6 +1,6 @@
 """Request/response models for the /v1 API."""
 
-from datetime import date
+from datetime import date, datetime
 from typing import Literal
 from uuid import UUID
 
@@ -272,3 +272,67 @@ class ConsentRequest(BaseModel):
     channel: Literal["email", "whatsapp"] = "email"
     status: Literal["opted_in", "opted_out"]
     source: str = Field(min_length=1, max_length=100)
+
+
+
+# --- routing, handoff, follow-ups ----------------------------------------------------------------
+
+class RouteRequest(BaseModel):
+    qualification: dict | None = None  # a /v1/qualify response (opt_out, reasons)
+    lead: NormalizedLeadOut
+    match_status: Literal["matched", "none", "insufficient_criteria", "conflict"] | None = None
+
+
+class RouteOut(BaseModel):
+    route: Literal["opt_out", "handoff", "shortlist", "clarify", "rep_only"]
+    reasons: list[str]
+
+
+class MessageOut(PrepareOut):
+    kind: Literal["rep", "customer", "manager"]
+    lead_id: int | None = None  # set on no_manager entries so ops can be alerted
+    lead_url: str | None = None
+
+
+class HandoffRequest(BaseModel):
+    event_id: UUID
+    correlation_id: UUID
+    lead_id: int
+    user_id: int | None = None
+    team_id: int | None = None
+    priority: Literal["high", "standard", "nurture"]
+    reasons: list[str] = Field(min_length=1)
+    lead: NormalizedLeadOut
+    matches: list[dict] = Field(default_factory=list)
+    now: datetime | None = None  # tests and manual replays; defaults to the current time
+
+
+class HandoffOut(BaseModel):
+    escalation_id: UUID
+    created: bool
+    due_at: datetime
+    contact_by: str
+    owner: dict | None
+    lead_url: str
+    messages: list[MessageOut]
+
+
+class ClockRequest(BaseModel):
+    now: datetime | None = None
+
+
+class HandoffCheckOut(BaseModel):
+    resolved: list[str]
+    messages: list[MessageOut]
+
+
+class FollowupStartRequest(BaseModel):
+    lead_id: int
+    correlation_id: UUID
+    lead: NormalizedLeadOut
+    now: datetime | None = None
+
+
+class FollowupDueOut(BaseModel):
+    messages: list[MessageOut]
+    stopped: list[dict]
