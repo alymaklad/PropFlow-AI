@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_propflow" model="ir.module.category">
+        <field name="name">PropFlow</field>
+        <field name="sequence">90</field>
+    </record>
+
+    <!-- Least-privilege group for the integration user: create, read and update leads and
+         contacts, read sales teams and stages. No delete, no settings, no other apps. -->
+    <record id="group_propflow_integration" model="res.groups">
+        <field name="name">PropFlow Integration</field>
+        <field name="category_id" ref="module_category_propflow"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="comment">For the PropFlow service account only. Grants create/read/write on CRM leads and contacts, and read access to sales teams and stages.</field>
+    </record>
+</odoo>

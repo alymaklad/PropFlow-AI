@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="crm_lead_view_form_propflow" model="ir.ui.view">
+        <field name="name">crm.lead.form.propflow</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="PropFlow" name="propflow">
+                    <group>
+                        <group string="Requirements">
+                            <field name="propflow_property_type"/>
+                            <field name="propflow_location"/>
+                            <field name="propflow_bedrooms"/>
+                            <field name="propflow_budget_min"/>
+                            <field name="propflow_budget_max"/>
+                            <field name="propflow_currency"/>
+                            <field name="propflow_delivery_pref"/>
+                            <field name="propflow_timeline_months"/>
+                        </group>
+                        <group string="Qualification">
+                            <field name="propflow_priority"/>
+                            <field name="propflow_score"/>
+                            <field name="propflow_rules_version"/>
+                            <field name="propflow_exception_status"/>
+                            <field name="propflow_last_contact"/>
+                            <field name="propflow_next_followup"/>
+                            <field name="propflow_source"/>
+                            <field name="propflow_correlation_id"/>
+                        </group>
+                    </group>
+                    <group string="Score explanation">
+                        <field name="propflow_score_explanation" nolabel="1" colspan="2"/>
+                    </group>
+                    <group string="Original inquiry">
+                        <field name="propflow_original_message" nolabel="1" colspan="2"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="crm_lead_view_tree_propflow" model="ir.ui.view">
+        <field name="name">crm.lead.tree.lead.propflow</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_tree_view_leads"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree" position="inside">
+                <field name="propflow_priority" optional="show"/>
+                <field name="propflow_score" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="crm_lead_view_search_propflow" model="ir.ui.view">
+        <field name="name">crm.lead.search.lead.propflow</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.view_crm_case_leads_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <filter string="PropFlow: high priority" name="propflow_high"
+                        domain="[('propflow_priority', '=', 'high')]"/>
+                <filter string="PropFlow: handed off" name="propflow_handoff"
+                        domain="[('propflow_exception_status', '=', 'handoff')]"/>
+                <filter string="PropFlow priority" name="group_propflow_priority"
+                        context="{'group_by': 'propflow_priority'}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

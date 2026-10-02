@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_crm_lead_propflow,crm.lead propflow integration,crm.model_crm_lead,group_propflow_integration,1,1,1,0
+access_res_partner_propflow,res.partner propflow integration,base.model_res_partner,group_propflow_integration,1,1,1,0
+access_crm_team_propflow,crm.team propflow integration,sales_team.model_crm_team,group_propflow_integration,1,0,0,0
+access_crm_team_member_propflow,crm.team.member propflow integration,sales_team.model_crm_team_member,group_propflow_integration,1,0,0,0
+access_crm_stage_propflow,crm.stage propflow integration,crm.model_crm_stage,group_propflow_integration,1,0,0,0
+access_crm_tag_propflow,crm.tag propflow integration,sales_team.model_crm_tag,group_propflow_integration,1,0,0,0

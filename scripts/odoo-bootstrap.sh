@@ -8,7 +8,8 @@ set -a; source .env; set +a
 DB="${ODOO_DB_NAME:-propflow_odoo}"
 LOGIN="${ODOO_INTEGRATION_LOGIN:-propflow-integration}"
 
-out=$(docker compose exec -T -e PROPFLOW_INTEGRATION_LOGIN="$LOGIN" odoo sh -c \
+out=$(docker compose exec -T -e PROPFLOW_INTEGRATION_LOGIN="$LOGIN" \
+  -e PROPFLOW_INTEGRATION_EMAIL="${ODOO_INTEGRATION_EMAIL:-propflow-noreply@example.com}" odoo sh -c \
   'odoo shell --no-http --db_host "$HOST" --db_user "$USER" --db_password "$PASSWORD" -d "$0" --log-level=warn' \
   "$DB" < odoo/bootstrap/create_integration_user.py)
 
@@ -30,4 +31,7 @@ if n == 0:
 open(p, "w").write(s)
 PY
 echo "Integration user '$LOGIN' (uid $uid) ready; API key written to .env."
-echo "Restart n8n to pick it up: docker compose up -d n8n"
+# The shell still holds the old key from `source .env`, and Compose prefers shell variables
+# over the .env file, so pass the new one explicitly.
+ODOO_API_KEY="$key" docker compose up -d ai-service n8n >/dev/null 2>&1
+echo "Restarted ai-service and n8n with the new key."
