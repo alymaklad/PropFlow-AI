@@ -160,7 +160,8 @@ requirements:
 ## 7. Decisions (2026-10-03)
 
 1. **Demo only**, to show a company during a job application.
-2. **Oracle Cloud** Always Free VM.
+2. **AWS free plan** (credits for up to six months) on a t4g.small in Frankfurt; Oracle Cloud
+   Always Free stays the permanent option if its sign-up works later.
 3. **GitHub Actions** deploys (`.github/workflows/deploy.yml`).
 4. Reviewers get the buyer site publicly and, with credentials you share, the staff dashboard
    (`/staff`) and the captured emails (`/mail/`, Mailpit behind a password). Odoo and n8n stay

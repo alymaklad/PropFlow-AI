@@ -1,4 +1,4 @@
-# Deployment guide: free public demo on Oracle Cloud
+# Deployment guide: free public demo (Oracle Cloud or AWS free plan)
 
 Step-by-step instructions for putting the PropFlow demo online for reviewers (a company you are
 applying to). Why this setup was chosen, and what to consider, is in
@@ -15,6 +15,47 @@ What reviewers will get:
 
 Odoo and n8n stay private (you reach them over SSH); show them with screenshots or a short
 video.
+
+## AWS free plan (instead of sections 1 to 3)
+
+AWS's free plan gives new accounts credits (about USD 100 at sign-up, up to 100 more for
+getting-started tasks) for up to six months; you are never charged on the free plan, and at
+the end you upgrade or the account is closed. Check your balance and end date under Billing and
+Cost Management > Credits. That is enough for an application period, not for a permanent demo.
+
+### A. Secure the account (10 minutes)
+
+1. Account menu (top right) > **Security credentials** > **Assign MFA device** for the root
+   user.
+2. **Billing and Cost Management > Budgets > Create budget**: use the **Zero spend budget**
+   template, and add a monthly cost budget (for example USD 25) to watch how fast credits are
+   used.
+3. Optional but good practice: create an admin user in IAM Identity Center and stop using the
+   root user day to day.
+
+### B. Launch the server (10 minutes)
+
+1. Region (top right): **Europe (Frankfurt) eu-central-1** (no opt-in needed, close to Cairo).
+2. **EC2 > Instances > Launch instances**, name `propflow-demo`.
+3. **AMI**: Ubuntu Server 24.04 LTS, architecture **64-bit (Arm)**.
+4. **Instance type**: **t4g.small** (2 vCPU, 2 GB). It must show "Free tier eligible"; if it
+   does not in your account, pick the eligible type with at least 2 GB (for example t3.small,
+   then choose the 64-bit (x86) Ubuntu image instead). 1 GB types are too small.
+5. **Key pair**: Create new key pair, name `propflow-aws`, type **ED25519**, format **.pem**.
+   Save it as `~/.ssh/propflow-aws.pem` and run `chmod 400 ~/.ssh/propflow-aws.pem`.
+6. **Network settings**: allow SSH from **My IP**; tick **Allow HTTPS traffic from the
+   internet** and **Allow HTTP traffic from the internet**.
+7. **Storage**: **30 GiB gp3**.
+8. **Launch instance**.
+9. **EC2 > Elastic IPs > Allocate Elastic IP address**, then **Actions > Associate** it with
+   `propflow-demo`. This keeps the address fixed (AWS bills public IPv4 hourly, from the
+   credits, about USD 4 a month).
+10. Test: `ssh -i ~/.ssh/propflow-aws.pem ubuntu@<Elastic IP>`.
+
+On a 2 GB machine the stack idles at about 1 GB; the bootstrap script adds 4 GB of swap for
+image builds and spikes. Then continue with section 4 (DuckDNS) using the Elastic IP, and in the
+later sections use `~/.ssh/propflow-aws.pem` wherever `~/.ssh/propflow_oracle` appears. The
+server bootstrap's firewall step is harmless on AWS (the security group does the filtering).
 
 ## 1. Oracle Cloud account (about 20 minutes)
 
