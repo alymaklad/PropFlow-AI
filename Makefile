@@ -2,7 +2,7 @@
 PYTHON ?= python3
 SERVICE := services/ai-qualification
 
-.PHONY: help up down logs ps migrate odoo-init odoo-bootstrap odoo-seed odoo-update odoo-test n8n-import n8n-export eval scenarios lint test test-db seed-properties dataset
+.PHONY: help up down logs ps migrate odoo-init odoo-bootstrap odoo-seed odoo-update odoo-test n8n-import n8n-export eval scenarios retention docs lint test test-db seed-properties dataset
 
 help:
 	@grep -E '^[a-z-]+:' Makefile | cut -d: -f1 | sort
@@ -56,6 +56,15 @@ eval:
 # End-to-end scenarios against the running stack (add ARGS=--with-outage to stop/start Odoo)
 scenarios:
 	$(PYTHON) tests/scenarios/run_scenarios.py $(ARGS)
+
+# Anonymise ledger personal data older than DAYS (default 30)
+retention:
+	curl -sf -X POST localhost:$${AI_SERVICE_PORT:-8000}/v1/privacy/retention -H "X-API-Key: $$(grep '^AI_SERVICE_API_KEY=' .env | cut -d= -f2-)" -H 'Content-Type: application/json' -d '{"older_than_days": $(or $(DAYS),30)}'; echo
+
+# Regenerate docs/openapi.json and docs/workflow-catalog.md
+docs:
+	docker compose exec -T ai-service python -c 'import json; from app.main import app; print(json.dumps(app.openapi(), indent=2))' > docs/openapi.json
+	$(PYTHON) scripts/workflow_catalog.py
 
 lint:
 	ruff check .

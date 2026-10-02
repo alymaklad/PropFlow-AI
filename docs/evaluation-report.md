@@ -77,6 +77,25 @@ it was stopped by mistake), and adding more runs is the obvious next step.
   as asking for a person. This is defensible and errs on the safe side: a salesperson contacts
   the customer.
 
+## System metrics (description section 9)
+
+Computed by `scripts/system_metrics.py` from the records left by the end-to-end scenario runs
+(`make scenarios`, 2026-10-02): 26 scenario events, 24 valid, 4 delivered more than once,
+2 dead-lettered by a deliberate Odoo outage.
+
+| Metric | Result | Definition and caveats |
+|---|---|---|
+| Intake success rate | 24/24 (100%) | Valid scenario events that completed (invalid payloads excluded; bad signatures are never stored) |
+| CRM sync success rate | 22/22 (100%) | Final outcome per event. The deliberate outage attempts failed and were recovered by replay; they count once, as successes |
+| Duplicate prevention rate | 4/4 (100%) | Events delivered more than once (including 4-6 simultaneous deliveries) that produced one Odoo lead and no repeated email |
+| Extraction accuracy | 98.2-99.3% | Two runs with prompt v2 (above); single best run 441/444 |
+| Scoring consistency | 60/60 (100%) | Rule engine vs labelled expected scores (unit test) |
+| Processing latency | median 2.5 s, p90 81.9 s (22 events) | Receipt to completed. The tail is waiting on the Groq free-tier rate limit; outage events excluded |
+| Follow-up execution rate | 2/2 in tests; none due live | Reminders become due after 2 business days; schedule, stop conditions and business hours were verified with simulated time |
+| Recovery success rate | 2/2 (100%) | Dead-lettered events that completed after replay or redelivery |
+
+These are small samples from scripted scenarios, not production traffic.
+
 ## Limitations
 
 - **Small, synthetic, self-labelled data.** 50 English records written and labelled by the same

@@ -40,6 +40,29 @@ jobs:
       - name: Dataset tests
         run: python -m pytest tests/data
 
+  secrets:
+    name: Secret scan (full history)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        run: >-
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.28.0
+          git /repo --redact --no-banner --exit-code 1
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pip-audit
+      - run: pip-audit -r services/ai-qualification/requirements.txt --progress-spinner off
+
   compose:
     name: Validate Docker Compose
     runs-on: ubuntu-latest

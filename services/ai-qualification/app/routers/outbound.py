@@ -10,15 +10,18 @@ from app.auth import require_api_key
 from app.config import load_settings
 from app.deps import get_db
 from app.messages import TEMPLATE_VERSION, TemplateError, render
+from app.privacy import apply_retention, erase_contact
 from app.schemas import (
     ConsentRequest,
     DeadLetterOut,
     DeadLetterRequest,
+    EraseRequest,
     OutboundClaimOut,
     OutboundClaimRequest,
     OutboundStatusRequest,
     PrepareOut,
     PrepareRequest,
+    RetentionRequest,
 )
 
 router = APIRouter(prefix="/v1", dependencies=[Depends(require_api_key)])
@@ -116,7 +119,7 @@ def prepare_message(body: PrepareRequest,
                        contact_keys=body.contact_keys, template=body.template,
                        sequence_no=body.sequence_no, data=body.data)
     except TemplateError as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+        raise HTTPException(422, str(exc)) from exc
 
 
 @router.post("/consents", status_code=204)
@@ -164,3 +167,19 @@ def add_dead_letter(body: DeadLetterRequest,
         (body.workflow, body.correlation_id, Jsonb(body.payload), body.error),
     ).fetchone()
     return DeadLetterOut(id=dead_letter_id)
+
+
+@router.post("/privacy/erase")
+def privacy_erase(body: EraseRequest, conn: psycopg.Connection = Depends(get_db)) -> dict:
+    """Right to erasure for one contact (email address or phone number)."""
+    try:
+        return erase_contact(conn, body.contact)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@router.post("/privacy/retention")
+def privacy_retention(body: RetentionRequest,
+                      conn: psycopg.Connection = Depends(get_db)) -> dict:
+    """Anonymise personal data older than `older_than_days` (minimum 7)."""
+    return apply_retention(conn, body.older_than_days)

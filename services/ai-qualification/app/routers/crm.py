@@ -32,7 +32,7 @@ def upsert(body: UpsertRequest, conn: psycopg.Connection = Depends(get_db),
            odoo: OdooClient = Depends(get_odoo),
            settings: Settings = Depends(get_settings)) -> UpsertOut:
     if not body.lead.valid or not body.lead.contact_key:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "lead is not valid")
+        raise HTTPException(422, "lead is not valid")
     score = body.score.model_dump()
     try:
         result = upsert_lead(

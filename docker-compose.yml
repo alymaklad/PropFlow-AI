@@ -133,6 +133,9 @@ services:
       # Dev only: lets workflow expressions read the variables below via $env.
       # Revisit for staging/production (prefer n8n credentials).
       N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      # Execution history holds lead data: prune it after 7 days.
+      EXECUTIONS_DATA_PRUNE: "true"
+      EXECUTIONS_DATA_MAX_AGE: ${N8N_EXECUTIONS_MAX_AGE_HOURS:-168}
       WEBHOOK_HMAC_SECRET: ${WEBHOOK_HMAC_SECRET:?set WEBHOOK_HMAC_SECRET in .env}
       AI_SERVICE_URL: http://ai-service:8000
       AI_SERVICE_API_KEY: ${AI_SERVICE_API_KEY}

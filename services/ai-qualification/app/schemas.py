@@ -413,3 +413,12 @@ class ReportOut(BaseModel):
     subject: str
     text: str
     report: dict
+
+
+
+class EraseRequest(BaseModel):
+    contact: str = Field(min_length=3, max_length=320)  # email address or phone number
+
+
+class RetentionRequest(BaseModel):
+    older_than_days: int = Field(ge=7, le=3650)

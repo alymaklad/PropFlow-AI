@@ -1,0 +1,4255 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "PropFlow AI Qualification Service",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/v1/normalize": {
+      "post": {
+        "summary": "Normalize",
+        "description": "Always 200: an unusable lead comes back with valid=false and error codes, so the\nworkflow can record the rejection instead of dropping it.",
+        "operationId": "normalize_v1_normalize_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntakePayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NormalizedLeadOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/score": {
+      "post": {
+        "summary": "Score Lead",
+        "operationId": "score_lead_v1_score_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScoreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoreOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/intake/claim": {
+      "post": {
+        "summary": "Claim",
+        "description": "Record an already-trusted event once. A redelivery increments delivery_count and\nreturns the original row; `proceed` tells the workflow whether to (re)process it.",
+        "operationId": "claim_v1_intake_claim_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/intake/receive": {
+      "post": {
+        "summary": "Receive",
+        "description": "Verify the webhook signature over the exact raw body, parse it, and claim the event.\n\nUnsigned or wrongly signed requests are refused and NOT stored, so anonymous traffic\ncannot fill the ledger. Signed but malformed bodies are stored as rejected.",
+        "operationId": "receive_v1_intake_receive_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReceiveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiveOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "bad signature (not stored)"
+          },
+          "422": {
+            "description": "signed but not a JSON object (stored as rejected)"
+          }
+        }
+      }
+    },
+    "/v1/intake/{event_id}/status": {
+      "post": {
+        "summary": "Set Status",
+        "operationId": "set_status_v1_intake__event_id__status_post",
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Event Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Set Status V1 Intake  Event Id  Status Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/crm/leads/upsert": {
+      "post": {
+        "summary": "Upsert",
+        "operationId": "upsert_v1_crm_leads_upsert_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpsertOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/crm/leads/{lead_id}/followup": {
+      "post": {
+        "summary": "Followup",
+        "operationId": "followup_v1_crm_leads__lead_id__followup_post",
+        "parameters": [
+          {
+            "name": "lead_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Lead Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FollowupRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowupOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/outbound/claim": {
+      "post": {
+        "summary": "Claim Outbound",
+        "description": "Claim an internal notification (rep or ops email). Customer messages use\n/v1/messages/prepare, which also checks consent.",
+        "operationId": "claim_outbound_v1_outbound_claim_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutboundClaimRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutboundClaimOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/messages/prepare": {
+      "post": {
+        "summary": "Prepare Message",
+        "description": "The single path for customer messages: consent check, at-most-once claim, render.\nSend only when `send` is true, then report the outcome on /v1/outbound/{id}/status.",
+        "operationId": "prepare_message_v1_messages_prepare_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrepareRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrepareOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consents": {
+      "post": {
+        "summary": "Record Consent",
+        "description": "Record opt-in/opt-out for every key of a contact (email address and phone).",
+        "operationId": "record_consent_v1_consents_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/outbound/{message_id}/status": {
+      "post": {
+        "summary": "Set Outbound Status",
+        "operationId": "set_outbound_status_v1_outbound__message_id__status_post",
+        "parameters": [
+          {
+            "name": "message_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Message Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutboundStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Set Outbound Status V1 Outbound  Message Id  Status Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/dead-letters": {
+      "post": {
+        "summary": "Add Dead Letter",
+        "operationId": "add_dead_letter_v1_dead_letters_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeadLetterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeadLetterOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "List Dead Letters",
+        "operationId": "list_dead_letters_v1_dead_letters_get",
+        "parameters": [
+          {
+            "name": "status_filter",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "open",
+              "title": "Status Filter"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeadLetterItem"
+                  },
+                  "title": "Response List Dead Letters V1 Dead Letters Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/privacy/erase": {
+      "post": {
+        "summary": "Privacy Erase",
+        "description": "Right to erasure for one contact (email address or phone number).",
+        "operationId": "privacy_erase_v1_privacy_erase_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EraseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Privacy Erase V1 Privacy Erase Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/privacy/retention": {
+      "post": {
+        "summary": "Privacy Retention",
+        "description": "Anonymise personal data older than `older_than_days` (minimum 7).",
+        "operationId": "privacy_retention_v1_privacy_retention_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetentionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Privacy Retention V1 Privacy Retention Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/qualify": {
+      "post": {
+        "summary": "Qualify Lead",
+        "description": "Always 200. Provider failures produce status `fallback` with needs_human_review=true,\nand the merged lead then contains the form fields only.",
+        "operationId": "qualify_lead_v1_qualify_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QualifyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QualifyOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/match": {
+      "post": {
+        "summary": "Match",
+        "operationId": "match_v1_match_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/route": {
+      "post": {
+        "summary": "Route",
+        "operationId": "route_v1_route_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/handoffs": {
+      "post": {
+        "summary": "Handoff",
+        "operationId": "handoff_v1_handoffs_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HandoffRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandoffOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/handoffs/check": {
+      "post": {
+        "summary": "Handoffs Check",
+        "operationId": "handoffs_check_v1_handoffs_check_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClockRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandoffCheckOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/followups/start": {
+      "post": {
+        "summary": "Followups Start",
+        "operationId": "followups_start_v1_followups_start_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FollowupStartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Followups Start V1 Followups Start Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/followups/due": {
+      "post": {
+        "summary": "Followups Due",
+        "operationId": "followups_due_v1_followups_due_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClockRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowupDueOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/actions/next": {
+      "post": {
+        "summary": "Actions Next",
+        "description": "One call after the upsert and match: route, then hand off or message the customer,\nschedule the rep's follow-up, start reminders and notify the rep for high priority.",
+        "operationId": "actions_next_v1_actions_next_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NextActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NextActionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/reports/summary": {
+      "post": {
+        "summary": "Report Summary",
+        "operationId": "report_summary_v1_reports_summary_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/email/receive": {
+      "post": {
+        "summary": "Receive Email",
+        "operationId": "receive_email_v1_email_receive_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/dead-letters/{dead_letter_id}/replay": {
+      "post": {
+        "summary": "Replay Dead Letter",
+        "description": "Re-drive the original event through the intake webhook (same idempotency key, so a\npartially processed event resumes instead of duplicating).",
+        "operationId": "replay_dead_letter_v1_dead_letters__dead_letter_id__replay_post",
+        "parameters": [
+          {
+            "name": "dead_letter_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Dead Letter Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplayOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/dead-letters/{dead_letter_id}/discard": {
+      "post": {
+        "summary": "Discard Dead Letter",
+        "operationId": "discard_dead_letter_v1_dead_letters__dead_letter_id__discard_post",
+        "parameters": [
+          {
+            "name": "dead_letter_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Dead Letter Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscardRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplayOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "summary": "Healthz",
+        "description": "Liveness: the process is up. No dependencies are checked.",
+        "operationId": "healthz_healthz_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Healthz Healthz Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "summary": "Readyz",
+        "description": "Readiness: dependencies this service needs are reachable.",
+        "operationId": "readyz_readyz_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Readyz Readyz Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ClaimOut": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Event Id"
+          },
+          "correlation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Correlation Id"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "title": "Idempotency Key"
+          },
+          "duplicate": {
+            "type": "boolean",
+            "title": "Duplicate"
+          },
+          "proceed": {
+            "type": "boolean",
+            "title": "Proceed"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "delivery_count": {
+            "type": "integer",
+            "title": "Delivery Count"
+          },
+          "odoo_lead_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odoo Lead Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_id",
+          "correlation_id",
+          "idempotency_key",
+          "duplicate",
+          "proceed",
+          "status",
+          "delivery_count",
+          "odoo_lead_id"
+        ],
+        "title": "ClaimOut"
+      },
+      "ClaimRequest": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "form",
+              "email",
+              "manual"
+            ],
+            "title": "Source",
+            "default": "form"
+          },
+          "raw_payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Raw Payload"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "raw_payload"
+        ],
+        "title": "ClaimRequest"
+      },
+      "ClockRequest": {
+        "properties": {
+          "now": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Now"
+          }
+        },
+        "type": "object",
+        "title": "ClockRequest"
+      },
+      "ConsentRequest": {
+        "properties": {
+          "contact_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 5,
+            "minItems": 1,
+            "title": "Contact Keys"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "email",
+              "whatsapp"
+            ],
+            "title": "Channel",
+            "default": "email"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "opted_in",
+              "opted_out"
+            ],
+            "title": "Status"
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Source"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contact_keys",
+          "status",
+          "source"
+        ],
+        "title": "ConsentRequest"
+      },
+      "DeadLetterItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "workflow": {
+            "type": "string",
+            "title": "Workflow"
+          },
+          "error": {
+            "type": "string",
+            "title": "Error"
+          },
+          "correlation_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correlation Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "workflow",
+          "error",
+          "correlation_id",
+          "status",
+          "attempts",
+          "created_at"
+        ],
+        "title": "DeadLetterItem"
+      },
+      "DeadLetterOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "DeadLetterOut"
+      },
+      "DeadLetterRequest": {
+        "properties": {
+          "workflow": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Workflow"
+          },
+          "error": {
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 1,
+            "title": "Error"
+          },
+          "correlation_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correlation Id"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          }
+        },
+        "type": "object",
+        "required": [
+          "workflow",
+          "error"
+        ],
+        "title": "DeadLetterRequest"
+      },
+      "DiscardRequest": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "DiscardRequest"
+      },
+      "EmailIn": {
+        "properties": {
+          "message_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Id"
+          },
+          "in_reply_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "In Reply To"
+          },
+          "references": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "References"
+          },
+          "from_email": {
+            "type": "string",
+            "maxLength": 320,
+            "minLength": 3,
+            "title": "From Email"
+          },
+          "from_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Name"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "now": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Now"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from_email"
+        ],
+        "title": "EmailIn",
+        "description": "A received email, as parsed by n8n's IMAP trigger."
+      },
+      "EmailOut": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "inquiry",
+              "reply",
+              "duplicate",
+              "ignored"
+            ],
+            "title": "Kind"
+          },
+          "forwarded_status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forwarded Status"
+          },
+          "action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action"
+          },
+          "lead_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Id"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/MessageOut"
+            },
+            "type": "array",
+            "title": "Messages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "EmailOut"
+      },
+      "EraseRequest": {
+        "properties": {
+          "contact": {
+            "type": "string",
+            "maxLength": 320,
+            "minLength": 3,
+            "title": "Contact"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contact"
+        ],
+        "title": "EraseRequest"
+      },
+      "EventStatusRequest": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "rejected",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "odoo_lead_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odoo Lead Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "EventStatusRequest"
+      },
+      "FollowupDueOut": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/MessageOut"
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "stopped": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Stopped"
+          }
+        },
+        "type": "object",
+        "required": [
+          "messages",
+          "stopped"
+        ],
+        "title": "FollowupDueOut"
+      },
+      "FollowupOut": {
+        "properties": {
+          "scheduled": {
+            "type": "boolean",
+            "title": "Scheduled"
+          },
+          "activity_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activity Id"
+          },
+          "deadline": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scheduled",
+          "activity_id",
+          "deadline",
+          "warnings"
+        ],
+        "title": "FollowupOut"
+      },
+      "FollowupRequest": {
+        "properties": {
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "high",
+              "standard",
+              "nurture"
+            ],
+            "title": "Priority"
+          },
+          "today": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Today"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "priority"
+        ],
+        "title": "FollowupRequest"
+      },
+      "FollowupStartRequest": {
+        "properties": {
+          "lead_id": {
+            "type": "integer",
+            "title": "Lead Id"
+          },
+          "correlation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Correlation Id"
+          },
+          "lead": {
+            "$ref": "#/components/schemas/NormalizedLeadOut"
+          },
+          "now": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Now"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lead_id",
+          "correlation_id",
+          "lead"
+        ],
+        "title": "FollowupStartRequest"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HandoffCheckOut": {
+        "properties": {
+          "resolved": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Resolved"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/MessageOut"
+            },
+            "type": "array",
+            "title": "Messages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resolved",
+          "messages"
+        ],
+        "title": "HandoffCheckOut"
+      },
+      "HandoffOut": {
+        "properties": {
+          "escalation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Escalation Id"
+          },
+          "created": {
+            "type": "boolean",
+            "title": "Created"
+          },
+          "due_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Due At"
+          },
+          "contact_by": {
+            "type": "string",
+            "title": "Contact By"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
+          },
+          "lead_url": {
+            "type": "string",
+            "title": "Lead Url"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/MessageOut"
+            },
+            "type": "array",
+            "title": "Messages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "escalation_id",
+          "created",
+          "due_at",
+          "contact_by",
+          "owner",
+          "lead_url",
+          "messages"
+        ],
+        "title": "HandoffOut"
+      },
+      "HandoffRequest": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Event Id"
+          },
+          "correlation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Correlation Id"
+          },
+          "lead_id": {
+            "type": "integer",
+            "title": "Lead Id"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "team_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Id"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "high",
+              "standard",
+              "nurture"
+            ],
+            "title": "Priority"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Reasons"
+          },
+          "lead": {
+            "$ref": "#/components/schemas/NormalizedLeadOut"
+          },
+          "matches": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Matches"
+          },
+          "now": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Now"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_id",
+          "correlation_id",
+          "lead_id",
+          "priority",
+          "reasons",
+          "lead"
+        ],
+        "title": "HandoffRequest"
+      },
+      "IntakePayload": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "form",
+              "email",
+              "manual"
+            ],
+            "title": "Source",
+            "default": "form"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 320
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "property_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Property Type"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "bedrooms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bedrooms"
+          },
+          "budget": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget"
+          },
+          "budget_min": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Min"
+          },
+          "budget_max": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Max"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "timeline": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timeline"
+          },
+          "purchase_stage": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchase Stage"
+          },
+          "delivery_preference": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Preference"
+          }
+        },
+        "type": "object",
+        "title": "IntakePayload",
+        "description": "Raw intake as received by the webhook. Values are loose on purpose: web forms send\nstrings, and normalization decides what is usable."
+      },
+      "ListingOut": {
+        "properties": {
+          "listing_id": {
+            "type": "string",
+            "title": "Listing Id"
+          },
+          "property_type": {
+            "type": "string",
+            "title": "Property Type"
+          },
+          "location": {
+            "type": "string",
+            "title": "Location"
+          },
+          "price": {
+            "type": "number",
+            "title": "Price"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "bedrooms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bedrooms"
+          },
+          "bathrooms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bathrooms"
+          },
+          "delivery_status": {
+            "type": "string",
+            "title": "Delivery Status"
+          },
+          "amenities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Amenities"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "verified_days_ago": {
+            "type": "integer",
+            "title": "Verified Days Ago"
+          }
+        },
+        "type": "object",
+        "required": [
+          "listing_id",
+          "property_type",
+          "location",
+          "price",
+          "currency",
+          "bedrooms",
+          "bathrooms",
+          "delivery_status",
+          "amenities",
+          "description",
+          "verified_days_ago"
+        ],
+        "title": "ListingOut"
+      },
+      "MatchOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "matched",
+              "none",
+              "insufficient_criteria",
+              "conflict"
+            ],
+            "title": "Status"
+          },
+          "matches": {
+            "items": {
+              "$ref": "#/components/schemas/ListingOut"
+            },
+            "type": "array",
+            "title": "Matches"
+          },
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing"
+          },
+          "criteria": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Criteria"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "matches",
+          "missing",
+          "criteria"
+        ],
+        "title": "MatchOut"
+      },
+      "MatchRequest": {
+        "properties": {
+          "correlation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Correlation Id"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          },
+          "lead": {
+            "$ref": "#/components/schemas/NormalizedLeadOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "correlation_id",
+          "lead"
+        ],
+        "title": "MatchRequest"
+      },
+      "MessageOut": {
+        "properties": {
+          "send": {
+            "type": "boolean",
+            "title": "Send"
+          },
+          "message_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Id"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "template_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Version"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "rep",
+              "customer",
+              "manager"
+            ],
+            "title": "Kind"
+          },
+          "lead_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Id"
+          },
+          "lead_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "send",
+          "kind"
+        ],
+        "title": "MessageOut"
+      },
+      "NextActionOut": {
+        "properties": {
+          "route": {
+            "type": "string",
+            "enum": [
+              "opt_out",
+              "handoff",
+              "shortlist",
+              "clarify",
+              "rep_only"
+            ],
+            "title": "Route"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/MessageOut"
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "route",
+          "reasons",
+          "messages",
+          "due_at"
+        ],
+        "title": "NextActionOut"
+      },
+      "NextActionRequest": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Event Id"
+          },
+          "correlation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Correlation Id"
+          },
+          "lead": {
+            "$ref": "#/components/schemas/NormalizedLeadOut"
+          },
+          "qualification": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qualification"
+          },
+          "score": {
+            "$ref": "#/components/schemas/ScoreOut"
+          },
+          "upsert": {
+            "$ref": "#/components/schemas/UpsertOut"
+          },
+          "match": {
+            "$ref": "#/components/schemas/MatchOut"
+          },
+          "now": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Now"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_id",
+          "correlation_id",
+          "lead",
+          "score",
+          "upsert",
+          "match"
+        ],
+        "title": "NextActionRequest"
+      },
+      "NormalizedLeadOut": {
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "title": "Valid"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "form",
+              "email",
+              "manual"
+            ],
+            "title": "Source"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "contact_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Key"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "property_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Property Type"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "location_raw": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Raw"
+          },
+          "bedrooms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bedrooms"
+          },
+          "budget_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Min"
+          },
+          "budget_max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Max"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "purchase_timeline_months": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchase Timeline Months"
+          },
+          "delivery_preference": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ready",
+                  "under_construction",
+                  "off_plan",
+                  "any"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Preference"
+          },
+          "purchase_intent": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low",
+              "unknown"
+            ],
+            "title": "Purchase Intent"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "conflicts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Conflicts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "valid",
+          "source",
+          "name",
+          "phone",
+          "email",
+          "contact_key",
+          "message",
+          "property_type",
+          "location",
+          "location_raw",
+          "bedrooms",
+          "budget_min",
+          "budget_max",
+          "currency",
+          "purchase_timeline_months",
+          "purchase_intent",
+          "errors",
+          "warnings",
+          "conflicts"
+        ],
+        "title": "NormalizedLeadOut"
+      },
+      "OutboundClaimOut": {
+        "properties": {
+          "message_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Message Id"
+          },
+          "send": {
+            "type": "boolean",
+            "title": "Send"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message_id",
+          "send",
+          "status"
+        ],
+        "title": "OutboundClaimOut"
+      },
+      "OutboundClaimRequest": {
+        "properties": {
+          "lead_ref": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Lead Ref"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "email",
+              "whatsapp"
+            ],
+            "title": "Channel",
+            "default": "email"
+          },
+          "template": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Template"
+          },
+          "sequence_no": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Sequence No",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "lead_ref",
+          "template"
+        ],
+        "title": "OutboundClaimRequest"
+      },
+      "OutboundStatusRequest": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status"
+          },
+          "provider_msg_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Msg Id"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "OutboundStatusRequest"
+      },
+      "OwnerOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email"
+        ],
+        "title": "OwnerOut"
+      },
+      "PrepareOut": {
+        "properties": {
+          "send": {
+            "type": "boolean",
+            "title": "Send"
+          },
+          "message_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Id"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "template_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "send"
+        ],
+        "title": "PrepareOut"
+      },
+      "PrepareRequest": {
+        "properties": {
+          "lead_ref": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Lead Ref"
+          },
+          "to_email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 320
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Email"
+          },
+          "contact_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 5,
+            "title": "Contact Keys"
+          },
+          "template": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Template"
+          },
+          "sequence_no": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Sequence No",
+            "default": 1
+          },
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lead_ref",
+          "template"
+        ],
+        "title": "PrepareRequest"
+      },
+      "QualifyOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "valid",
+              "repaired",
+              "invalid",
+              "fallback",
+              "skipped",
+              "unsupported_language"
+            ],
+            "title": "Status"
+          },
+          "needs_human_review": {
+            "type": "boolean",
+            "title": "Needs Human Review"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "opt_out": {
+            "type": "boolean",
+            "title": "Opt Out"
+          },
+          "requests_human": {
+            "type": "boolean",
+            "title": "Requests Human"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "prompt_version": {
+            "type": "string",
+            "title": "Prompt Version"
+          },
+          "extraction": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extraction"
+          },
+          "lead": {
+            "$ref": "#/components/schemas/NormalizedLeadOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "needs_human_review",
+          "reasons",
+          "opt_out",
+          "requests_human",
+          "confidence",
+          "model",
+          "prompt_version",
+          "extraction",
+          "lead"
+        ],
+        "title": "QualifyOut"
+      },
+      "QualifyRequest": {
+        "properties": {
+          "correlation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Correlation Id"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          },
+          "lead": {
+            "$ref": "#/components/schemas/NormalizedLeadOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "correlation_id",
+          "lead"
+        ],
+        "title": "QualifyRequest"
+      },
+      "ReceiveOut": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Event Id"
+          },
+          "correlation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Correlation Id"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "title": "Idempotency Key"
+          },
+          "duplicate": {
+            "type": "boolean",
+            "title": "Duplicate"
+          },
+          "proceed": {
+            "type": "boolean",
+            "title": "Proceed"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "delivery_count": {
+            "type": "integer",
+            "title": "Delivery Count"
+          },
+          "odoo_lead_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odoo Lead Id"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_id",
+          "correlation_id",
+          "idempotency_key",
+          "duplicate",
+          "proceed",
+          "status",
+          "delivery_count",
+          "odoo_lead_id",
+          "payload"
+        ],
+        "title": "ReceiveOut"
+      },
+      "ReceiveRequest": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "form",
+              "email",
+              "manual"
+            ],
+            "title": "Source",
+            "default": "form"
+          },
+          "raw_body": {
+            "type": "string",
+            "maxLength": 100000,
+            "title": "Raw Body"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp"
+          },
+          "signature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signature"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "raw_body"
+        ],
+        "title": "ReceiveRequest",
+        "description": "What n8n forwards from the webhook: the exact raw body plus the signature headers."
+      },
+      "ReplayOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "resolution": {
+            "type": "string",
+            "title": "Resolution"
+          },
+          "intake_status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intake Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "resolution"
+        ],
+        "title": "ReplayOut"
+      },
+      "ReportOut": {
+        "properties": {
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "report": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Report"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subject",
+          "text",
+          "report"
+        ],
+        "title": "ReportOut"
+      },
+      "ReportRequest": {
+        "properties": {
+          "period": {
+            "type": "string",
+            "enum": [
+              "day",
+              "week"
+            ],
+            "title": "Period",
+            "default": "day"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          }
+        },
+        "type": "object",
+        "title": "ReportRequest"
+      },
+      "RetentionRequest": {
+        "properties": {
+          "older_than_days": {
+            "type": "integer",
+            "maximum": 3650.0,
+            "minimum": 7.0,
+            "title": "Older Than Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "older_than_days"
+        ],
+        "title": "RetentionRequest"
+      },
+      "RouteOut": {
+        "properties": {
+          "route": {
+            "type": "string",
+            "enum": [
+              "opt_out",
+              "handoff",
+              "shortlist",
+              "clarify",
+              "rep_only"
+            ],
+            "title": "Route"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          }
+        },
+        "type": "object",
+        "required": [
+          "route",
+          "reasons"
+        ],
+        "title": "RouteOut"
+      },
+      "RouteRequest": {
+        "properties": {
+          "qualification": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qualification"
+          },
+          "lead": {
+            "$ref": "#/components/schemas/NormalizedLeadOut"
+          },
+          "match_status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "matched",
+                  "none",
+                  "insufficient_criteria",
+                  "conflict"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lead"
+        ],
+        "title": "RouteRequest"
+      },
+      "ScoreComponentOut": {
+        "properties": {
+          "rule": {
+            "type": "string",
+            "title": "Rule"
+          },
+          "points": {
+            "type": "integer",
+            "title": "Points"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rule",
+          "points",
+          "reason"
+        ],
+        "title": "ScoreComponentOut"
+      },
+      "ScoreOut": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "components": {
+            "items": {
+              "$ref": "#/components/schemas/ScoreComponentOut"
+            },
+            "type": "array",
+            "title": "Components"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "high",
+              "standard",
+              "nurture"
+            ],
+            "title": "Priority"
+          },
+          "rules_version": {
+            "type": "string",
+            "title": "Rules Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "components",
+          "priority",
+          "rules_version"
+        ],
+        "title": "ScoreOut"
+      },
+      "ScoreRequest": {
+        "properties": {
+          "budget_min": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Min"
+          },
+          "budget_max": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Max"
+          },
+          "purchase_timeline_months": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 240.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchase Timeline Months"
+          },
+          "property_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Property Type"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "bedrooms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 20.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bedrooms"
+          },
+          "purchase_intent": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low",
+              "unknown"
+            ],
+            "title": "Purchase Intent",
+            "default": "unknown"
+          },
+          "responded_to_followup": {
+            "type": "boolean",
+            "title": "Responded To Followup",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "ScoreRequest"
+      },
+      "UpsertOut": {
+        "properties": {
+          "lead_id": {
+            "type": "integer",
+            "title": "Lead Id"
+          },
+          "lead_url": {
+            "type": "string",
+            "title": "Lead Url"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "created",
+              "updated",
+              "matched_contact"
+            ],
+            "title": "Action"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "team_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Id"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OwnerOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lead_id",
+          "lead_url",
+          "action",
+          "user_id",
+          "team_id",
+          "owner",
+          "warnings"
+        ],
+        "title": "UpsertOut"
+      },
+      "UpsertRequest": {
+        "properties": {
+          "correlation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Correlation Id"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          },
+          "lead": {
+            "$ref": "#/components/schemas/NormalizedLeadOut"
+          },
+          "score": {
+            "$ref": "#/components/schemas/ScoreOut"
+          },
+          "exception_status": {
+            "type": "string",
+            "enum": [
+              "none",
+              "handoff",
+              "sync_error"
+            ],
+            "title": "Exception Status",
+            "default": "none"
+          }
+        },
+        "type": "object",
+        "required": [
+          "correlation_id",
+          "lead",
+          "score"
+        ],
+        "title": "UpsertRequest"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

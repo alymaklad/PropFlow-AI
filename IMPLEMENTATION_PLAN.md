@@ -222,6 +222,18 @@ Goal: a **structured** web-form lead goes from webhook to Odoo, scored and assig
 | 4.5 | Demo script and recording (intake → qualify → CRM → follow-up → escalation → report) on synthetic data; workflow screenshots | M |
 | 4.6 | Final repo sweep: no secrets, no personal data, CV bullets rewritten to match what shipped (per the CV accuracy note) | S |
 
+**Phase 4 status:**
+
+| Task | Status |
+|---|---|
+| 4.1 Security pass | Done: gitleaks (history clean) and pip-audit (no known vulnerabilities) locally and in CI; log review (no personal data in logs); erasure and retention endpoints; n8n history pruning; `.env.production.example` |
+| 4.2 Runbooks | Done: `docs/security-and-operations.md` |
+| 4.3 Docs | Done: architecture (rewritten, diagram), API spec + `docs/openapi.json`, generated workflow catalog. The quick start was exercised step by step on the development machine but **not on a separate clean machine** |
+| 4.4 Evaluation | Done: AI evaluation plus the eight system metrics from scenario records (`docs/evaluation-report.md`) |
+| 4.5 Demo | Script written (`docs/demo.md`); **the recording itself is for the owner to make** |
+| 4.6 Final sweep | Done: secret scan, synthetic data only, CV bullets rewritten to match what shipped (`docs/cv-summary.md`) |
+| Frontend | React buyer site and staff dashboard: next |
+
 ---
 
 ## 4. Test strategy
