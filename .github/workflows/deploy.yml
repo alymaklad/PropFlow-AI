@@ -1,6 +1,6 @@
 name: Deploy
 
-# Deploys the public demo to the Oracle Cloud VM. Runs the full CI first.
+# Deploys the public demo to the server (AWS or Oracle Cloud). Runs the full CI first.
 #   - push a tag like v1.0.0, or
 #   - Actions > Deploy > Run workflow, with a branch or tag.
 # Setup (once): docs/deployment-guide.md, "GitHub Actions".
@@ -41,20 +41,36 @@ jobs:
             echo "::error::Unexpected characters in ref: $REF"; exit 1
           fi
 
+      # Problems are reported as annotations (never with the secret values), so they are
+      # readable on the run summary without opening the logs.
       - name: SSH key and known host
         env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
           SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          PUBLIC_HOST: ${{ vars.PUBLIC_HOST }}
         run: |
+          fail() { echo "::error::$1"; exit 1; }
+          where="secret in the 'production' environment (Settings > Environments)"
+          [ -n "$HOST" ] || fail "DEPLOY_HOST is empty: add it as a $where"
+          [ -n "$SSH_KEY" ] || fail "DEPLOY_SSH_KEY is empty: add it as a $where"
+          [ -n "$KNOWN_HOSTS" ] || fail "DEPLOY_KNOWN_HOSTS is empty: add it as a $where"
+          [ -n "$PUBLIC_HOST" ] || fail "PUBLIC_HOST is empty: add it as a variable in the 'production' environment"
           install -d -m 700 ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" | tr -d '\r' > ~/.ssh/known_hosts
+          ssh-keygen -y -f ~/.ssh/deploy_key > /dev/null 2>&1 \
+            || fail "DEPLOY_SSH_KEY is not a valid private key: paste the whole private key file, including the BEGIN and END lines"
+          ssh-keygen -F "$HOST" -f ~/.ssh/known_hosts > /dev/null \
+            || fail "DEPLOY_KNOWN_HOSTS has no entry for DEPLOY_HOST: use the line printed by ssh-keyscan for that address"
+          timeout 15 bash -c "exec 3<>/dev/tcp/$HOST/22" 2>/dev/null \
+            || fail "Cannot reach port 22 on DEPLOY_HOST: the firewall (cloud security group) must allow SSH from GitHub Actions"
 
       - name: Deploy on the server
         env:
           HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
-          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ServerAliveInterval=30 \
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=30 \
             "deploy@$HOST" "/opt/propflow/deploy/deploy.sh '$REF'"
 
       - name: Smoke test from outside
