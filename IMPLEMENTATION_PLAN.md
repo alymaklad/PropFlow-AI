@@ -199,6 +199,18 @@ Goal: a **structured** web-form lead goes from webhook to Odoo, scored and assig
 
 **Exit criteria:** every success criterion in description §12 has an automated test or a documented manual check.
 
+**Phase 3 status:**
+
+| Task | Status |
+|---|---|
+| 3.1 Email intake | Done: GreenMail inbox + n8n IMAP workflow; new inquiries forwarded to the same intake; replies detected by Message-ID; verified live (inquiry with real AI, reply, STOP) |
+| 3.3 Opt-out | Done: keyword + AI flag at intake, STOP replies; one consent check in the only customer-message path |
+| 3.4 Contact limits | Done: max 3 customer emails per address per day, max 2 reminders, business hours only |
+| 3.5 Idempotent send | Done in Phase 1-2 (outbound ledger, at most once) |
+| 3.6 Retry and replay | Done: bounded retries, dead letters, replay and discard endpoints, auto-close on completion; replay verified live after an Odoo outage |
+| 3.7 Reporting | Next |
+| 3.8 Scenario runner | Not started |
+
 ### Phase 4: Hardening and portfolio readiness (≈ 1–2 weeks)
 
 | # | Task | Size |

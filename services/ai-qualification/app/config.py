@@ -21,6 +21,8 @@ class Settings:
     groq_strict: bool = True
     groq_reasoning_effort: str | None = None
     qualify_min_confidence: float = 0.6
+    n8n_intake_url: str = "http://n8n:5678/webhook/propflow/intake"
+    max_customer_emails_per_day: int = 3
     version: str = "0.1.0"
 
 
@@ -42,6 +44,9 @@ def load_settings() -> Settings:
         groq_strict=os.environ.get("GROQ_STRICT", "true").lower() != "false",
         groq_reasoning_effort=os.environ.get("GROQ_REASONING_EFFORT") or None,
         qualify_min_confidence=float(os.environ.get("QUALIFY_MIN_CONFIDENCE") or 0.6),
+        n8n_intake_url=os.environ.get("N8N_INTAKE_URL")
+        or "http://n8n:5678/webhook/propflow/intake",
+        max_customer_emails_per_day=int(os.environ.get("MAX_CUSTOMER_EMAILS_PER_DAY") or 3),
     )
 
 

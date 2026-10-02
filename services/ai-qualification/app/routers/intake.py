@@ -111,4 +111,11 @@ def set_status(event_id: UUID, body: EventStatusRequest,
     ).fetchone()
     if not updated:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "unknown event")
+    if body.status == "completed":
+        # A redelivery or replay succeeded: close the dead letters for this event.
+        conn.execute(
+            "UPDATE dead_letters d SET status = 'replayed', resolution = 'event completed',"
+            " updated_at = now() FROM intake_events e"
+            " WHERE e.id = %s AND d.correlation_id = e.correlation_id AND d.status = 'open'",
+            (event_id,))
     return {"status": body.status}

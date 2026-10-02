@@ -5,9 +5,11 @@ The files in this folder are the source of truth. The n8n UI is at http://localh
 | File | Workflow | Trigger |
 |---|---|---|
 | `workflows/lead-intake-a.json` | **PropFlow - Lead intake (A)** | `POST /webhook/propflow/intake` |
+| `workflows/email-intake-b.json` | **PropFlow - Email intake (B)** | New email in the leads inbox (IMAP) |
 | `workflows/scheduler.json` | **PropFlow - Scheduler (handoffs, follow-ups)** | Every 15 minutes |
 | `workflows/error-handler.json` | **PropFlow - Error handler** | Any failed run of the other workflows |
 | `credentials/mailpit-smtp.json` | Mailpit SMTP (dev) | No secret: Mailpit needs no login |
+| `credentials/greenmail-imap.json` | GreenMail IMAP (dev) | No secret: GreenMail runs with authentication disabled |
 
 ```bash
 make n8n-import   # load credentials + workflows, publish them, restart n8n
@@ -50,6 +52,22 @@ service, where they are unit-tested.
 A redelivery of a failed or still-running event is processed again; every step is idempotent.
 n8n rejects bodies that are not valid JSON (`422`) before the workflow runs, so those are not
 stored.
+
+## Email intake (B)
+
+Watches the leads inbox (`INBOUND_EMAIL`; GreenMail in dev) and passes each email to
+`/v1/email/receive`:
+
+- **Reply to something we sent** (its `In-Reply-To`/`References` match a message id in the
+  outbound ledger, or a "Re:" subject from an address with active reminders): reminders stop,
+  the reply is posted on the lead, the follow-up-response points are added to the score, the
+  owner gets an activity and an email. A "STOP" reply records the opt-out instead.
+- **New inquiry**: the service signs it and forwards it to the intake webhook with the email's
+  Message-ID as idempotency key, so it goes through exactly the same steps as a web form.
+
+Every outgoing email sets Reply-To to the leads inbox, so customer replies land there. To test:
+`python3 scripts/send_email.py --from buyer@example.com --subject "..." --body "..."
+[--in-reply-to "<message-id>"]`.
 
 ## Scheduler
 

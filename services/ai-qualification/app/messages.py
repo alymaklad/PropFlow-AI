@@ -213,3 +213,16 @@ def _internal_high_priority(d: dict) -> tuple[str, str]:
 
 TEMPLATES["internal_high_priority"] = (
     _internal_high_priority, ("owner_name", "lead_id", "score", "action", "lead_url"))
+
+
+
+def _internal_customer_replied(d: dict) -> tuple[str, str]:
+    lines = [f"Hi {first_name(d['owner_name'])},", "",
+             f"The customer on lead #{d['lead_id']} replied by email. Automatic reminders have "
+             "stopped.", "", "Their reply:", *[f"  {line}" for line in d["reply"].splitlines()],
+             "", f"Open the lead: {d['lead_url']}", "-- PropFlow"]
+    return f"[PropFlow] Customer replied on lead #{d['lead_id']}", "\n".join(lines)
+
+
+TEMPLATES["internal_customer_replied"] = (
+    _internal_customer_replied, ("owner_name", "lead_id", "reply", "lead_url"))

@@ -1,64 +1,46 @@
 {
-  "id": "PropFlowSchedul1",
-  "name": "PropFlow - Scheduler (handoffs, follow-ups)",
+  "id": "PropFlowEmailB01",
+  "name": "PropFlow - Email intake (B)",
   "active": true,
   "nodes": [
     {
-      "id": "5f100000-0000-4000-8000-000000000001",
-      "name": "Every 15 minutes",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
+      "id": "5f200000-0000-4000-8000-000000000001",
+      "name": "New email in leads inbox",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2.1,
       "position": [
         0,
         300
       ],
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "minutes",
-              "minutesInterval": 15
-            }
-          ]
+        "mailbox": "INBOX",
+        "postProcessAction": "read",
+        "format": "resolved",
+        "options": {}
+      },
+      "credentials": {
+        "imap": {
+          "id": "GreenMailImapDev",
+          "name": "GreenMail IMAP (dev)"
         }
       }
     },
     {
-      "id": "5f100000-0000-4000-8000-000000000002",
-      "name": "Check handoffs",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
+      "id": "5f200000-0000-4000-8000-000000000002",
+      "name": "Build email request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         220,
         300
       ],
       "parameters": {
-        "method": "POST",
-        "url": "={{ $env.AI_SERVICE_URL }}/v1/handoffs/check",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "X-API-Key",
-              "value": "={{ $env.AI_SERVICE_API_KEY }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "json",
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({}) }}",
-        "options": {
-          "timeout": 30000
-        }
-      },
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 3000
+        "jsCode": "// Map the parsed email to the service's EmailIn shape (one item per email in this poll).\nreturn $input.all().map((item) => {\n  const m = item.json;\n  const from = (m.from && m.from.value && m.from.value[0]) || {};\n  let refs = m.references || [];\n  if (typeof refs === 'string') refs = refs.split(/\\s+/).filter(Boolean);\n  return { json: {\n    message_id: m.messageId || null,\n    in_reply_to: m.inReplyTo || null,\n    references: refs.slice(0, 50),\n    from_email: from.address || '',\n    from_name: from.name || null,\n    subject: m.subject || null,\n    text: String(m.text || '').slice(0, 50000),\n  } };\n});"
+      }
     },
     {
-      "id": "5f100000-0000-4000-8000-000000000003",
-      "name": "Due follow-ups",
+      "id": "5f200000-0000-4000-8000-000000000003",
+      "name": "Receive email",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
@@ -67,7 +49,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.AI_SERVICE_URL }}/v1/followups/due",
+        "url": "={{ $env.AI_SERVICE_URL }}/v1/email/receive",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -80,7 +62,7 @@
         "sendBody": true,
         "contentType": "json",
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({}) }}",
+        "jsonBody": "={{ JSON.stringify($json) }}",
         "options": {
           "timeout": 30000
         }
@@ -90,19 +72,19 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "5f100000-0000-4000-8000-00000000001e",
+      "id": "5f200000-0000-4000-8000-00000000001e",
       "name": "Done",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        1760,
+        1560,
         300
       ],
       "parameters": {},
       "executeOnce": true
     },
     {
-      "id": "5f100000-0000-4000-8000-00000000000a",
+      "id": "5f200000-0000-4000-8000-00000000000a",
       "name": "Split messages",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -111,11 +93,11 @@
         300
       ],
       "parameters": {
-        "jsCode": "// One item per email to send. Entries that could not reach their intended recipient (no\n// owner, no manager) become ops alerts. Everything else (opted out, already sent) is skipped.\nconst messages = [...$('Check handoffs').first().json.messages, ...$('Due follow-ups').first().json.messages];\nconst items = [];\nfor (const m of messages) {\n  if (m.send) {\n    items.push({ json: { to: m.to, subject: m.subject, text: m.text, message_id: m.message_id, kind: m.kind } });\n  } else if (['no_owner', 'no_manager'].includes(m.reason)) {\n    const who = m.reason === 'no_owner' ? 'a salesperson' : 'a sales manager';\n    items.push({ json: {\n      to: $env.ALERT_EMAIL, message_id: null, kind: 'ops',\n      subject: `[PropFlow] Lead #${m.lead_id} needs attention`,\n      text: `PropFlow could not reach ${who} for lead #${m.lead_id}. Assign it in Odoo:\\n${m.lead_url}`,\n    } });\n  }\n}\nreturn items.length ? items : [{ json: { none: true } }];"
+        "jsCode": "// One item per email to send. Entries that could not reach their intended recipient (no\n// owner, no manager) become ops alerts. Everything else (opted out, already sent) is skipped.\nconst messages = $('Receive email').all().flatMap((i) => i.json.messages || []);\nconst items = [];\nfor (const m of messages) {\n  if (m.send) {\n    items.push({ json: { to: m.to, subject: m.subject, text: m.text, message_id: m.message_id, kind: m.kind } });\n  } else if (['no_owner', 'no_manager'].includes(m.reason)) {\n    const who = m.reason === 'no_owner' ? 'a salesperson' : 'a sales manager';\n    items.push({ json: {\n      to: $env.ALERT_EMAIL, message_id: null, kind: 'ops',\n      subject: `[PropFlow] Lead #${m.lead_id} needs attention`,\n      text: `PropFlow could not reach ${who} for lead #${m.lead_id}. Assign it in Odoo:\\n${m.lead_url}`,\n    } });\n  }\n}\nreturn items.length ? items : [{ json: { none: true } }];"
       }
     },
     {
-      "id": "5f100000-0000-4000-8000-00000000000b",
+      "id": "5f200000-0000-4000-8000-00000000000b",
       "name": "Anything to send?",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
@@ -130,7 +112,7 @@
       }
     },
     {
-      "id": "5f100000-0000-4000-8000-00000000000c",
+      "id": "5f200000-0000-4000-8000-00000000000c",
       "name": "Send email",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
@@ -158,7 +140,7 @@
       }
     },
     {
-      "id": "5f100000-0000-4000-8000-00000000000d",
+      "id": "5f200000-0000-4000-8000-00000000000d",
       "name": "Ledgered (sent)?",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
@@ -173,7 +155,7 @@
       }
     },
     {
-      "id": "5f100000-0000-4000-8000-00000000000e",
+      "id": "5f200000-0000-4000-8000-00000000000e",
       "name": "Ledgered (failed)?",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
@@ -188,7 +170,7 @@
       }
     },
     {
-      "id": "5f100000-0000-4000-8000-00000000000f",
+      "id": "5f200000-0000-4000-8000-00000000000f",
       "name": "Mark sent",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
@@ -221,7 +203,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "5f100000-0000-4000-8000-000000000010",
+      "id": "5f200000-0000-4000-8000-000000000010",
       "name": "Mark failed send",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
@@ -255,29 +237,29 @@
     }
   ],
   "connections": {
-    "Every 15 minutes": {
+    "New email in leads inbox": {
       "main": [
         [
           {
-            "node": "Check handoffs",
+            "node": "Build email request",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Check handoffs": {
+    "Build email request": {
       "main": [
         [
           {
-            "node": "Due follow-ups",
+            "node": "Receive email",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Due follow-ups": {
+    "Receive email": {
       "main": [
         [
           {
@@ -398,6 +380,6 @@
     "executionOrder": "v1",
     "errorWorkflow": "PropFlowErrorWf1",
     "saveDataErrorExecution": "all",
-    "saveDataSuccessExecution": "none"
+    "saveDataSuccessExecution": "all"
   }
 }

@@ -49,8 +49,8 @@ def upsert(body: UpsertRequest, conn: psycopg.Connection = Depends(get_db),
 
     if body.event_id:
         with conn.transaction():
-            conn.execute("UPDATE intake_events SET odoo_lead_id = %s WHERE id = %s",
-                         (result.lead_id, body.event_id))
+            conn.execute("UPDATE intake_events SET odoo_lead_id = %s, crm_action = %s"
+                         " WHERE id = %s", (result.lead_id, result.action, body.event_id))
             conn.execute(
                 """
                 INSERT INTO score_results (event_id, rules_version, total, components, priority)

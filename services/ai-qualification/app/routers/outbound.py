@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from psycopg.types.json import Jsonb
 
 from app.auth import require_api_key
+from app.config import load_settings
 from app.deps import get_db
 from app.messages import TEMPLATE_VERSION, TemplateError, render
 from app.schemas import (
@@ -24,7 +25,7 @@ router = APIRouter(prefix="/v1", dependencies=[Depends(require_api_key)])
 
 
 def claim_message(conn: psycopg.Connection, lead_ref: str, channel: str, template: str,
-                  sequence_no: int) -> OutboundClaimOut:
+                  sequence_no: int, to_address: str | None = None) -> OutboundClaimOut:
     """Reserve a message before sending it. `send` is true only for a new message or one whose
     previous attempt failed. A message left `pending` by a crash mid-send is NOT resent
     automatically (it may have gone out): at most once, and it stays visible as pending."""
@@ -35,9 +36,9 @@ def claim_message(conn: psycopg.Connection, lead_ref: str, channel: str, templat
                            key).fetchone()
         if row is None:
             inserted = conn.execute(
-                "INSERT INTO outbound_messages (lead_ref, channel, template, sequence_no)"
-                " VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING RETURNING id",
-                (lead_ref, channel, template, sequence_no),
+                "INSERT INTO outbound_messages (lead_ref, channel, template, sequence_no,"
+                " to_address) VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING RETURNING id",
+                (lead_ref, channel, template, sequence_no, to_address),
             ).fetchone()
             if inserted:
                 return OutboundClaimOut(message_id=inserted[0], send=True, status="pending")
@@ -71,16 +72,33 @@ def claim_outbound(body: OutboundClaimRequest,
     return claim_message(conn, body.lead_ref, body.channel, body.template, body.sequence_no)
 
 
+def sent_today(conn: psycopg.Connection, to_email: str) -> int:
+    """Customer emails sent (or in flight) to this address in the last 24 hours."""
+    return conn.execute(
+        "SELECT count(*) FROM outbound_messages WHERE lower(to_address) = lower(%s)"
+        " AND status IN ('pending', 'sent', 'delivered') AND template LIKE 'customer_%%'"
+        " AND created_at > now() - interval '24 hours'", (to_email,)).fetchone()[0]
+
+
 def prepare(conn: psycopg.Connection, *, lead_ref: str, to_email: str | None,
             contact_keys: list[str], template: str, sequence_no: int, data: dict,
-            check_consent: bool = True) -> PrepareOut:
-    """Consent check (customer messages), render, at-most-once claim. Raises TemplateError."""
+            check_consent: bool = True, daily_limit: int | None = None) -> PrepareOut:
+    """Consent check and per-contact daily limit (customer messages), render, at-most-once
+    claim. Raises TemplateError."""
     if not to_email:
         return PrepareOut(send=False, reason="no_email")
     if check_consent and opted_out(conn, [to_email, *contact_keys], "email"):
         return PrepareOut(send=False, reason="opted_out")
+    if check_consent:
+        limit = daily_limit if daily_limit is not None \
+            else load_settings().max_customer_emails_per_day
+        existing = conn.execute(
+            "SELECT 1 FROM outbound_messages WHERE lead_ref = %s AND template = %s"
+            " AND sequence_no = %s", (lead_ref, template, sequence_no)).fetchone()
+        if existing is None and sent_today(conn, to_email) >= limit:
+            return PrepareOut(send=False, reason="rate_limited")
     subject, text = render(template, data)
-    claim = claim_message(conn, lead_ref, "email", template, sequence_no)
+    claim = claim_message(conn, lead_ref, "email", template, sequence_no, to_address=to_email)
     if not claim.send:
         return PrepareOut(send=False, message_id=claim.message_id,
                           reason="already_sent" if claim.status == "sent" else claim.status)
@@ -127,9 +145,10 @@ def record_consent(body: ConsentRequest, conn: psycopg.Connection = Depends(get_
 def set_outbound_status(message_id: UUID, body: OutboundStatusRequest,
                         conn: psycopg.Connection = Depends(get_db)) -> dict[str, str]:
     updated = conn.execute(
-        "UPDATE outbound_messages SET status = %s, provider_msg_id = %s, error = %s"
+        "UPDATE outbound_messages SET status = %s, provider_msg_id = %s, error = %s,"
+        " sent_at = CASE WHEN %s = 'sent' THEN now() ELSE sent_at END"
         " WHERE id = %s RETURNING id",
-        (body.status, body.provider_msg_id, body.error, message_id),
+        (body.status, body.provider_msg_id, body.error, body.status, message_id),
     ).fetchone()
     if not updated:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "unknown message")

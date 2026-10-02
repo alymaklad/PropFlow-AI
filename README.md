@@ -29,7 +29,8 @@ get "permission denied" on the socket, log out and back in (or prefix commands w
 | n8n | http://localhost:5678 |
 | Odoo | http://localhost:8069 |
 | AI service | http://localhost:8000/healthz |
-| Mailpit | http://localhost:8025 |
+| Mailpit (outgoing mail) | http://localhost:8025 |
+| GreenMail (leads inbox, dev) | SMTP 127.0.0.1:3025, IMAP 127.0.0.1:3143 |
 
 ## Development without Docker
 

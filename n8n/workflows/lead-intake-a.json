@@ -32,7 +32,7 @@
         300
       ],
       "parameters": {
-        "jsCode": "// Forward the exact raw body and signature headers; the service verifies the signature.\nconst item = $input.first();\nconst headers = item.json.headers || {};\nlet rawBody = '';\ntry {\n  rawBody = (await this.helpers.getBinaryDataBuffer(0, 'data')).toString('utf8');\n} catch (e) {\n  rawBody = '';\n}\nreturn [{ json: {\n  source: 'form',\n  raw_body: rawBody,\n  timestamp: headers['x-propflow-timestamp'] || null,\n  signature: headers['x-propflow-signature'] || null,\n  idempotency_key: headers['x-idempotency-key'] || null,\n} }];"
+        "jsCode": "// Forward the exact raw body and signature headers; the service verifies the signature.\nconst item = $input.first();\nconst headers = item.json.headers || {};\nlet rawBody = '';\ntry {\n  rawBody = (await this.helpers.getBinaryDataBuffer(0, 'data')).toString('utf8');\n} catch (e) {\n  rawBody = '';\n}\nconst allowedSources = ['form', 'email', 'manual'];\nconst source = allowedSources.includes(headers['x-propflow-source']) ? headers['x-propflow-source'] : 'form';\nreturn [{ json: {\n  source,\n  raw_body: rawBody,\n  timestamp: headers['x-propflow-timestamp'] || null,\n  signature: headers['x-propflow-signature'] || null,\n  idempotency_key: headers['x-idempotency-key'] || null,\n} }];"
       }
     },
     {
@@ -617,7 +617,8 @@
         "emailFormat": "text",
         "text": "={{ $json.text }}",
         "options": {
-          "appendAttribution": false
+          "appendAttribution": false,
+          "replyTo": "={{ $env.INBOUND_EMAIL }}"
         }
       },
       "credentials": {

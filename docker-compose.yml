@@ -63,6 +63,8 @@ services:
       ODOO_SALES_TEAM_ID: ${ODOO_SALES_TEAM_ID:-}
       ODOO_PUBLIC_URL: ${ODOO_PUBLIC_URL:-http://localhost:8069}
       WEBHOOK_HMAC_SECRET: ${WEBHOOK_HMAC_SECRET:?set WEBHOOK_HMAC_SECRET in .env}
+      N8N_INTAKE_URL: http://n8n:5678/webhook/propflow/intake
+      MAX_CUSTOMER_EMAILS_PER_DAY: ${MAX_CUSTOMER_EMAILS_PER_DAY:-3}
     ports:
       - "127.0.0.1:${AI_SERVICE_PORT:-8000}:8000"
     depends_on:
@@ -140,6 +142,9 @@ services:
       SMTP_PORT: ${SMTP_PORT:-1025}
       NOTIFY_FROM_EMAIL: ${NOTIFY_FROM_EMAIL:-propflow-noreply@example.com}
       ALERT_EMAIL: ${ALERT_EMAIL:-ops@example.com}
+      # Customer replies go here (Reply-To on every outgoing email)
+      INBOUND_EMAIL: ${INBOUND_EMAIL:-leads@propflow.test}
+      REPORT_EMAIL: ${REPORT_EMAIL:-ops@example.com}
     ports:
       - "127.0.0.1:${N8N_PORT:-5678}:5678"
     volumes:
@@ -155,6 +160,19 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+
+  # --- Dev inbound mailbox (leads@propflow.test) for email intake; SMTP 3025, IMAP 3143 ---
+  # Authentication is disabled: any login works and mailboxes are created on first delivery.
+  greenmail:
+    image: greenmail/standalone:2.1.14
+    <<: *restart
+    environment:
+      GREENMAIL_OPTS: >-
+        -Dgreenmail.setup.test.smtp -Dgreenmail.setup.test.imap
+        -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled
+    ports:
+      - "127.0.0.1:${GREENMAIL_SMTP_PORT:-3025}:3025"
+      - "127.0.0.1:${GREENMAIL_IMAP_PORT:-3143}:3143"
 
   # --- Dev mail catcher: nothing sent here leaves the machine ---
   mailpit:

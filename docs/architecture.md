@@ -38,7 +38,10 @@ the project owner) or **Proposed** (a default awaiting confirmation).
 | 19 | Customer-entered form fields win over AI extraction | Accepted | The model only fills gaps. |
 | 20 | After the upsert, one composite call (`/v1/actions/next`) decides and performs the next step | Accepted | Keeps branching logic tested in Python; n8n shows the pipeline step by step. |
 | 21 | If the AI fails but the form has a location and a budget, the lead continues automatically | Accepted | Deterministic fallback; only leads that need understanding are handed off. |
-| 22 | Reminders stop on opt-out, paused automation, handoff, conversion to an opportunity, or a won or closed lead | Accepted | Detecting customer replies needs email intake (Phase 3). Until then a rep pauses automation or converts the lead. |
+| 22 | Reminders stop on opt-out, paused automation, handoff, conversion to an opportunity, a won or closed lead, or a customer reply | Accepted | Reply detection arrived with email intake (decision 24). |
+| 23 | Email inquiries and dead-letter replays are signed by the service and sent to the same intake webhook | Accepted | One intake path for every channel; n8n cannot sign (no `crypto`), the service holds the secret. |
+| 24 | Customer replies are recognised by `In-Reply-To`/`References` against the outbound ledger (subject fallback) | Accepted | Replies stop reminders, add the follow-up-response points and alert the owner; "STOP" opts out. |
+| 25 | At most 3 customer emails per address per 24 hours (configurable) | Accepted | Enforced in the single customer-message path, after the consent check. |
 | 17 | The intake webhook answers `202` once the lead is validated; scoring and CRM work continue after the response | Accepted | Form submitters are not kept waiting on Odoo. Failures after `202` go to the error handler and dead-letter queue. |
 
 ## Stack topology (docker-compose.yml)

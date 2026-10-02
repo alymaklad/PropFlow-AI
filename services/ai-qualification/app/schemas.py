@@ -355,3 +355,49 @@ class NextActionOut(BaseModel):
     reasons: list[str]
     messages: list[MessageOut]
     due_at: datetime | None
+
+
+
+# --- inbound email and recovery -------------------------------------------------------------------
+
+class EmailIn(BaseModel):
+    """A received email, as parsed by n8n's IMAP trigger."""
+
+    message_id: str | None = Field(default=None, max_length=500)
+    in_reply_to: str | None = Field(default=None, max_length=500)
+    references: list[str] = Field(default_factory=list, max_length=50)
+    from_email: str = Field(min_length=3, max_length=320)
+    from_name: str | None = Field(default=None, max_length=200)
+    subject: str | None = Field(default=None, max_length=1000)
+    text: str | None = Field(default=None, max_length=50_000)
+    now: datetime | None = None
+
+
+class EmailOut(BaseModel):
+    kind: Literal["inquiry", "reply", "duplicate", "ignored"]
+    forwarded_status: int | None = None
+    action: str | None = None
+    lead_id: int | None = None
+    score: dict | None = None
+    messages: list[MessageOut] = Field(default_factory=list)
+
+
+class DeadLetterItem(BaseModel):
+    id: UUID
+    workflow: str
+    error: str
+    correlation_id: UUID | None
+    status: str
+    attempts: int
+    created_at: datetime
+
+
+class ReplayOut(BaseModel):
+    id: UUID
+    status: str
+    resolution: str
+    intake_status: int | None = None
+
+
+class DiscardRequest(BaseModel):
+    reason: str = Field(min_length=3, max_length=500)

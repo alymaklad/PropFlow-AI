@@ -116,8 +116,10 @@ If the AI failed but the form already has a location and a budget, the lead cont
 automatically instead of being handed off. High-priority leads also email the owner.
 
 `messages` items: `kind` (`rep`, `customer`, `manager`), `send`, `message_id`, `to`, `subject`,
-`text`, `reason` when not sendable (`opted_out`, `already_sent`, `pending`, `no_email`,
-`no_owner`, `no_manager`). Send only `send: true` items, then report on
+`text`, `reason` when not sendable (`opted_out`, `rate_limited`, `already_sent`, `pending`,
+`no_email`, `no_owner`, `no_manager`). Customer emails are limited to
+`MAX_CUSTOMER_EMAILS_PER_DAY` (default 3) per address per 24 hours; retries of an already
+claimed message are not counted. Send only `send: true` items, then report on
 `/v1/outbound/{message_id}/status`.
 
 ## Handoffs and follow-ups
@@ -191,10 +193,26 @@ The "record before send" ledger. Claim with `lead_ref`, `channel`, `template` an
 left `pending` by a crash mid-send is never resent automatically (it may have gone out), so
 delivery is at most once.
 
-## `POST /v1/dead-letters`
+## Dead letters
 
-Body: `workflow`, `error`, optional `correlation_id` and `payload` (execution metadata).
-Returns `201` with the id.
+- `POST /v1/dead-letters`: record a failed run (`workflow`, `error`, optional `correlation_id`,
+  `payload`). Returns `201` with the id.
+- `GET /v1/dead-letters?status_filter=open`: list (open, replayed or discarded).
+- `POST /v1/dead-letters/{id}/replay`: re-drive the original event through the intake webhook,
+  signed, with its original idempotency key (a partly processed event resumes instead of
+  duplicating). `409` when there is no event (scheduled jobs rerun by themselves) or it was
+  rejected; `502` when the webhook fails (the dead letter stays open).
+- `POST /v1/dead-letters/{id}/discard` with a `reason`.
+
+A dead letter also closes automatically when its event later completes (redelivery or replay).
+
+## `POST /v1/email/receive`
+
+Body (from n8n's IMAP trigger): `message_id`, `in_reply_to`, `references`, `from_email`,
+`from_name`, `subject`, `text`. Returns `kind`: `reply` (with `action` `reply_recorded` or
+`opted_out`, the score change and the rep notification), `inquiry` (forwarded to the intake
+webhook; `forwarded_status`), `duplicate` or `ignored`. Message ids are compared with or
+without angle brackets.
 
 ## Health
 
