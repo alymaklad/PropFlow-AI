@@ -5,3 +5,11 @@ extend-exclude = ["n8n", "odoo/custom_addons"]
 
 [lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[lint.flake8-bugbear]
+# FastAPI dependency-injection idiom
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Header", "fastapi.Query"]
+
+[lint.per-file-ignores]
+# `env` is injected by `odoo shell`
+"odoo/bootstrap/*.py" = ["F821"]

@@ -1,0 +1,12 @@
+{
+  "version": "reference-1",
+  "_comment": "Illustrative rules from the project description (section 6C). Configurable examples, not validated benchmarks. Changing points or thresholds requires a new version string.",
+  "rules": {
+    "budget_provided": {"points": 20},
+    "timeline_within_3_months": {"points": 30, "max_months": 3},
+    "requirements_complete": {"points": 20, "no_bedrooms_types": ["land", "commercial", "office"]},
+    "explicit_high_intent": {"points": 20},
+    "followup_response": {"points": 10}
+  },
+  "priority_thresholds": {"high": 80, "standard": 50}
+}

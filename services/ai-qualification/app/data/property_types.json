@@ -1,0 +1,13 @@
+{
+  "_comment": "Canonical property type -> aliases.",
+  "apartment": ["apartment", "apt", "flat", "aparment", "شقة"],
+  "villa": ["villa", "standalone", "stand-alone", "فيلا"],
+  "townhouse": ["townhouse", "town house", "twin house", "twinhouse"],
+  "duplex": ["duplex", "دوبلكس"],
+  "penthouse": ["penthouse", "roof apartment"],
+  "studio": ["studio", "استوديو"],
+  "chalet": ["chalet", "شاليه"],
+  "land": ["land", "plot", "أرض"],
+  "commercial": ["commercial", "shop", "retail", "store", "محل"],
+  "office": ["office", "admin unit", "administrative unit", "مكتب"]
+}

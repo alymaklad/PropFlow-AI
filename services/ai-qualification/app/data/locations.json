@@ -1,0 +1,16 @@
+{
+  "_comment": "Canonical location -> aliases (matched case-insensitively, whole words). Neighbourhoods roll up to their city/area.",
+  "New Cairo": ["new cairo", "nw cairo", "fifth settlement", "5th settlement", "tagamoa", "tagamo3", "tagamo", "el tagamoa", "tagamoa el khames", "american university", "auc", "rehab", "madinaty", "التجمع الخامس", "التجمع", "القاهرة الجديدة"],
+  "Sheikh Zayed": ["sheikh zayed", "shaikh zayed", "el sheikh zayed", "zayed", "الشيخ زايد"],
+  "6th of October": ["6th of october", "6 october", "6th october", "october city", "sixth of october", "السادس من أكتوبر", "أكتوبر"],
+  "New Capital": ["new capital", "new administrative capital", "administrative capital", "nac", "العاصمة الإدارية", "العاصمة الادارية"],
+  "Maadi": ["maadi", "el maadi", "degla", "المعادي"],
+  "Zamalek": ["zamalek", "الزمالك"],
+  "Heliopolis": ["heliopolis", "masr el gedida", "مصر الجديدة"],
+  "Nasr City": ["nasr city", "madinet nasr", "مدينة نصر"],
+  "North Coast": ["north coast", "sahel", "el sahel", "الساحل الشمالي", "الساحل"],
+  "Marsa Matrouh": ["marsa matrouh", "matrouh", "مرسى مطروح"],
+  "Hurghada": ["hurghada", "الغردقة"],
+  "El Gouna": ["el gouna", "gouna", "الجونة"],
+  "Alexandria": ["alexandria", "alex", "smouha", "الإسكندرية", "اسكندرية"]
+}
