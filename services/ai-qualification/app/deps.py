@@ -51,7 +51,8 @@ class UnavailableLLM:
 
 @cache
 def _llm(provider: str, api_key: str | None, model: str, strict: bool,
-         reasoning_effort: str | None) -> LLMClient:
+         reasoning_effort: str | None, max_attempts: int = 5,
+         max_retry_wait: float = 20.0) -> LLMClient:
     # FakeLLM is for tests only (they override get_llm). At runtime "none"/"fake" means AI is
     # switched off: qualification falls back and free-text leads go to a salesperson.
     if provider in ("none", "fake"):
@@ -59,7 +60,8 @@ def _llm(provider: str, api_key: str | None, model: str, strict: bool,
     if provider == "groq":
         try:
             return GroqClient(api_key or "", model, strict=strict,
-                              reasoning_effort=reasoning_effort)
+                              reasoning_effort=reasoning_effort, max_attempts=max_attempts,
+                              max_retry_wait=max_retry_wait)
         except LLMUnavailable as exc:
             return UnavailableLLM(str(exc))
     return UnavailableLLM(f"unknown LLM_PROVIDER {provider!r}")
@@ -67,4 +69,5 @@ def _llm(provider: str, api_key: str | None, model: str, strict: bool,
 
 def get_llm(settings: Settings = Depends(get_settings)) -> LLMClient:
     return _llm(settings.llm_provider, settings.groq_api_key, settings.groq_model,
-                settings.groq_strict, settings.groq_reasoning_effort)
+                settings.groq_strict, settings.groq_reasoning_effort, settings.groq_max_attempts,
+                settings.groq_max_retry_wait)

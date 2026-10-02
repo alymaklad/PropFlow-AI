@@ -276,7 +276,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ correlation_id: $('Receive & claim').first().json.body.correlation_id, event_id: $('Receive & claim').first().json.body.event_id, lead: $('Normalize').first().json }) }}",
         "options": {
-          "timeout": 30000
+          "timeout": 150000
         }
       },
       "retryOnFail": true,

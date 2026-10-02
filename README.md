@@ -41,4 +41,17 @@ make test                                   # migration tests skip without a dat
 make test-db TEST_DATABASE_URL=postgresql://postgres@localhost:5432/propflow_test
 ```
 
-The Phase 0 status is tracked in the plan. Everything uses synthetic data.
+## End-to-end scenarios
+
+With the stack running and seeded (`make odoo-seed seed-properties n8n-import`):
+
+```bash
+make scenarios                      # all scenarios through the real webhook and inbox
+make scenarios ARGS=--with-outage   # also stops Odoo to test dead letters and replay
+```
+
+The runner (`tests/scenarios/run_scenarios.py`, standard library only) checks the ledger,
+Odoo, Mailpit and the report for each scenario. Scenarios that need the AI are skipped when
+`LLM_PROVIDER` is not `groq`.
+
+Everything uses synthetic data. Status by phase is tracked in the plan.

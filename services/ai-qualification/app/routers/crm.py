@@ -49,8 +49,16 @@ def upsert(body: UpsertRequest, conn: psycopg.Connection = Depends(get_db),
 
     if body.event_id:
         with conn.transaction():
-            conn.execute("UPDATE intake_events SET odoo_lead_id = %s, crm_action = %s"
-                         " WHERE id = %s", (result.lead_id, result.action, body.event_id))
+            # A retry or concurrent delivery must not overwrite what actually happened:
+            # created > matched_contact > updated.
+            conn.execute(
+                """
+                UPDATE intake_events SET odoo_lead_id = %(lead)s, crm_action = CASE
+                    WHEN 'created' IN (crm_action, %(action)s) THEN 'created'
+                    WHEN 'matched_contact' IN (crm_action, %(action)s) THEN 'matched_contact'
+                    ELSE %(action)s END
+                 WHERE id = %(event)s
+                """, {"lead": result.lead_id, "action": result.action, "event": body.event_id})
             conn.execute(
                 """
                 INSERT INTO score_results (event_id, rules_version, total, components, priority)

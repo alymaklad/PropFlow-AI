@@ -209,7 +209,7 @@ Goal: a **structured** web-form lead goes from webhook to Odoo, scored and assig
 | 3.5 Idempotent send | Done in Phase 1-2 (outbound ledger, at most once) |
 | 3.6 Retry and replay | Done: bounded retries, dead letters, replay and discard endpoints, auto-close on completion; replay verified live after an Odoo outage |
 | 3.7 Reporting | Done: `/v1/reports/summary` and the daily/weekly reports workflow; figures reconciled against seeded ledger records in tests; verified live (email delivered) |
-| 3.8 Scenario runner | Not started |
+| 3.8 Scenario runner | Done: `make scenarios` (12 scenarios + optional Odoo outage + report reconciliation against the ledger and Odoo). Found and fixed a concurrency bug (a parallel delivery treated its own new lead as a known contact). On the Groq free tier, AI scenarios can fall back to a handoff when the per-minute token budget is exhausted |
 
 ### Phase 4: Hardening and portfolio readiness (≈ 1–2 weeks)
 

@@ -54,6 +54,8 @@ services:
       GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
       GROQ_STRICT: ${GROQ_STRICT:-true}
       GROQ_REASONING_EFFORT: ${GROQ_REASONING_EFFORT:-}
+      GROQ_MAX_ATTEMPTS: ${GROQ_MAX_ATTEMPTS:-5}
+      GROQ_MAX_RETRY_WAIT: ${GROQ_MAX_RETRY_WAIT:-20}
       QUALIFY_MIN_CONFIDENCE: ${QUALIFY_MIN_CONFIDENCE:-0.6}
       # Deterministic CRM client (/v1/crm); never used by the LLM code path
       ODOO_URL: ${ODOO_URL:-http://odoo:8069}

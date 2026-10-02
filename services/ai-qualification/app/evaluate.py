@@ -126,7 +126,8 @@ def main() -> int:
     from app.deps import _llm  # built the same way as in the API
     settings = load_settings()
     llm = _llm(settings.llm_provider, settings.groq_api_key, settings.groq_model,
-               settings.groq_strict, settings.groq_reasoning_effort)
+               settings.groq_strict, settings.groq_reasoning_effort, settings.groq_max_attempts,
+               settings.groq_max_retry_wait)
     records = json.load(sys.stdin)["records"][: args.limit]
     report = evaluate(records, llm, min_confidence=settings.qualify_min_confidence,
                       delay=args.delay)

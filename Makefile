@@ -2,7 +2,7 @@
 PYTHON ?= python3
 SERVICE := services/ai-qualification
 
-.PHONY: help up down logs ps migrate odoo-init odoo-bootstrap odoo-seed odoo-update odoo-test n8n-import n8n-export eval lint test test-db seed-properties dataset
+.PHONY: help up down logs ps migrate odoo-init odoo-bootstrap odoo-seed odoo-update odoo-test n8n-import n8n-export eval scenarios lint test test-db seed-properties dataset
 
 help:
 	@grep -E '^[a-z-]+:' Makefile | cut -d: -f1 | sort
@@ -52,6 +52,10 @@ n8n-export:
 # Extraction evaluation against Groq (needs GROQ_API_KEY); report in docs/eval/
 eval:
 	scripts/eval.sh
+
+# End-to-end scenarios against the running stack (add ARGS=--with-outage to stop/start Odoo)
+scenarios:
+	$(PYTHON) tests/scenarios/run_scenarios.py $(ARGS)
 
 lint:
 	ruff check .

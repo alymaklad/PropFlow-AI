@@ -142,6 +142,14 @@ def upsert_lead(odoo: OdooClient, conn: psycopg.Connection, *, correlation_id: U
                             _m2o_id(existing["team_id"]))
 
     match = find_open_lead_for_contact(odoo, lead.get("phone"), lead.get("email"))
+    if match and match.get("propflow_correlation_id") == str(correlation_id):
+        # Our own lead, created by a concurrent delivery of this same event that committed
+        # between our two searches: a retry, not a new inquiry from a known contact.
+        odoo.execute("crm.lead", "write", [match["id"]], {
+            **requirement_values(lead, only_present=False), **score_values(score, exception_status),
+        })
+        return UpsertResult(match["id"], "updated", _m2o_id(match["user_id"]),
+                            _m2o_id(match["team_id"]))
     if match:
         values = missing_requirement_values(lead, match)
         if exception_status != "none":

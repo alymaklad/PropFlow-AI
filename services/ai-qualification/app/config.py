@@ -20,6 +20,8 @@ class Settings:
     groq_model: str = "openai/gpt-oss-120b"
     groq_strict: bool = True
     groq_reasoning_effort: str | None = None
+    groq_max_attempts: int = 5
+    groq_max_retry_wait: float = 20.0
     qualify_min_confidence: float = 0.6
     n8n_intake_url: str = "http://n8n:5678/webhook/propflow/intake"
     max_customer_emails_per_day: int = 3
@@ -43,6 +45,8 @@ def load_settings() -> Settings:
         groq_model=os.environ.get("GROQ_MODEL") or "openai/gpt-oss-120b",
         groq_strict=os.environ.get("GROQ_STRICT", "true").lower() != "false",
         groq_reasoning_effort=os.environ.get("GROQ_REASONING_EFFORT") or None,
+        groq_max_attempts=int(os.environ.get("GROQ_MAX_ATTEMPTS") or 5),
+        groq_max_retry_wait=float(os.environ.get("GROQ_MAX_RETRY_WAIT") or 20),
         qualify_min_confidence=float(os.environ.get("QUALIFY_MIN_CONFIDENCE") or 0.6),
         n8n_intake_url=os.environ.get("N8N_INTAKE_URL")
         or "http://n8n:5678/webhook/propflow/intake",

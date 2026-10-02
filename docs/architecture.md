@@ -42,6 +42,7 @@ the project owner) or **Proposed** (a default awaiting confirmation).
 | 23 | Email inquiries and dead-letter replays are signed by the service and sent to the same intake webhook | Accepted | One intake path for every channel; n8n cannot sign (no `crypto`), the service holds the secret. |
 | 24 | Customer replies are recognised by `In-Reply-To`/`References` against the outbound ledger (subject fallback) | Accepted | Replies stop reminders, add the follow-up-response points and alert the owner; "STOP" opts out. |
 | 25 | At most 3 customer emails per address per 24 hours (configurable) | Accepted | Enforced in the single customer-message path, after the consent check. |
+| 26 | The LLM call waits out rate limits (up to 5 attempts, Retry-After up to 20 s) before falling back | Accepted | The customer already has their `202`; n8n's Qualify step allows 150 s. `max_completion_tokens` 1024 (actual use ~450) to reduce per-minute reservations. |
 | 17 | The intake webhook answers `202` once the lead is validated; scoring and CRM work continue after the response | Accepted | Form submitters are not kept waiting on Odoo. Failures after `202` go to the error handler and dead-letter queue. |
 
 ## Stack topology (docker-compose.yml)

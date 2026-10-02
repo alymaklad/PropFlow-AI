@@ -24,7 +24,7 @@ import httpx
 logger = logging.getLogger("propflow.llm")
 
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
-MAX_RETRY_AFTER_SECONDS = 10.0
+MAX_RETRY_AFTER_SECONDS = 20.0
 
 
 class LLMError(Exception):
@@ -55,7 +55,9 @@ class LLMClient(Protocol):
 
 class GroqClient:
     def __init__(self, api_key: str, model: str, *, base_url: str = GROQ_BASE_URL,
-                 timeout: float = 30.0, max_attempts: int = 3, backoff_seconds: float = 1.0,
+                 timeout: float = 30.0, max_attempts: int = 5, backoff_seconds: float = 1.0,
+                 max_retry_wait: float = MAX_RETRY_AFTER_SECONDS,
+                 max_completion_tokens: int = 1024,
                  strict: bool = True, reasoning_effort: str | None = None,
                  transport: httpx.BaseTransport | None = None,
                  sleep: Callable[[float], None] = time.sleep) -> None:
@@ -65,6 +67,10 @@ class GroqClient:
         self._strict = strict
         self._reasoning_effort = reasoning_effort
         self._max_attempts = max_attempts
+        self._max_retry_wait = max_retry_wait
+        # Typical use is ~450 (incl. reasoning); providers may reserve the maximum against
+        # per-minute token limits, so keep it modest.
+        self._max_completion_tokens = max_completion_tokens
         self._backoff = backoff_seconds
         self._sleep = sleep
         self._http = httpx.Client(base_url=base_url, timeout=timeout, transport=transport,
@@ -75,7 +81,7 @@ class GroqClient:
         body = {
             "model": self.model,
             "temperature": 0,
-            "max_completion_tokens": 2048,
+            "max_completion_tokens": self._max_completion_tokens,
             "messages": [{"role": "system", "content": system},
                          {"role": "user", "content": user}],
             "response_format": {"type": "json_schema", "json_schema": {
@@ -101,7 +107,8 @@ class GroqClient:
                     raise LLMBadOutput(f"HTTP {response.status_code}: {response.text[:300]}")
                 if response.status_code == 429 or response.status_code >= 500:
                     error = LLMUnavailable(f"HTTP {response.status_code}")
-                    delay = self._retry_after(response) or self._backoff * 2 ** (attempt - 1)
+                    delay = self._retry_after(response, self._max_retry_wait) \
+                        or self._backoff * 2 ** (attempt - 1)
                 else:
                     raise LLMUnavailable(f"HTTP {response.status_code}: {response.text[:300]}")
             if attempt == self._max_attempts:
@@ -112,10 +119,10 @@ class GroqClient:
         raise AssertionError("unreachable")
 
     @staticmethod
-    def _retry_after(response: httpx.Response) -> float | None:
+    def _retry_after(response: httpx.Response, cap: float) -> float | None:
         value = response.headers.get("retry-after")
         try:
-            return min(float(value), MAX_RETRY_AFTER_SECONDS) if value else None
+            return min(float(value), cap) if value else None
         except ValueError:
             return None
 

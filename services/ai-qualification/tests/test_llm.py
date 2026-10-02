@@ -42,6 +42,7 @@ def test_request_uses_strict_json_schema():
         "name": "s", "strict": True, "schema": SCHEMA}}
     assert [m["role"] for m in body["messages"]] == ["system", "user"]
     assert body["reasoning_effort"] == "low"
+    assert body["max_completion_tokens"] == 1024
 
 
 def test_rate_limit_honours_retry_after_then_succeeds():
@@ -55,12 +56,19 @@ def test_retry_after_is_capped():
     client, _, sleeps = make([httpx.Response(429, headers={"retry-after": "120"}),
                               completion("{}")])
     call(client)
-    assert sleeps == [10.0]
+    assert sleeps == [20.0]
+
+
+def test_retry_budget_is_configurable():
+    client, requests, _ = make([httpx.Response(429)] * 2, max_attempts=2)
+    with pytest.raises(LLMUnavailable):
+        call(client)
+    assert len(requests) == 2
 
 
 def test_outage_gives_up_as_unavailable():
     client, requests, _ = make([httpx.ConnectError("down"), httpx.Response(503),
-                                httpx.ReadTimeout("slow")])
+                                httpx.ReadTimeout("slow")], max_attempts=3)
     with pytest.raises(LLMUnavailable):
         call(client)
     assert len(requests) == 3

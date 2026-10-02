@@ -112,6 +112,46 @@ def test_known_contact_handoff_status_is_carried_over(migrated_db):
 
 
 @needs_db
+def test_concurrent_delivery_of_same_event_is_not_a_known_contact(migrated_db, monkeypatch):
+    """The lead appears (created by a parallel delivery of the same event) after our search
+    by correlation id but before our search by contact."""
+    import app.crm as crm
+    odoo, cid = FakeOdoo(), uuid.uuid4()
+    real = crm.find_by_correlation
+    calls = []
+
+    def racing_find(o, c):
+        calls.append(c)
+        if len(calls) == 1:  # our first look: nothing yet; then the other delivery commits
+            o._create({"name": "x", "email_from": "lead001@example.com", "user_id": 10,
+                       "propflow_correlation_id": str(c)})
+            return None
+        return real(o, c)
+
+    monkeypatch.setattr(crm, "find_by_correlation", racing_find)
+    result = upsert_lead(odoo, migrated_db, correlation_id=cid, lead=lead(), score=SCORE)
+    assert result.action == "updated" and len(odoo.leads) == 1
+    assert odoo.notes == []  # no spurious "new inquiry" note on our own lead
+
+
+@needs_db
+def test_ledger_action_is_not_overwritten_by_retries(db_client, migrated_db):
+    from app.deps import get_odoo
+    from app.main import app
+    odoo = FakeOdoo()
+    app.dependency_overrides[get_odoo] = lambda: odoo
+    claim = db_client.post("/v1/intake/claim", json={"raw_payload": {"r": 1}}).json()
+    body = {"correlation_id": claim["correlation_id"], "event_id": claim["event_id"],
+            "lead": {**lead(), "valid": True, "source": "form", "purchase_intent": "medium",
+                     "errors": [], "warnings": [], "conflicts": []},
+            "score": SCORE}
+    assert db_client.post("/v1/crm/leads/upsert", json=body).json()["action"] == "created"
+    assert db_client.post("/v1/crm/leads/upsert", json=body).json()["action"] == "updated"
+    assert migrated_db.execute("SELECT crm_action FROM intake_events").fetchone() == \
+        ("created",)
+
+
+@needs_db
 def test_closed_won_lead_is_not_reused(migrated_db):
     odoo = FakeOdoo()
     first = upsert_lead(odoo, migrated_db, correlation_id=uuid.uuid4(), lead=lead(), score=SCORE)
