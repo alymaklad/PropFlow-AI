@@ -26,6 +26,8 @@ get "permission denied" on the socket, log out and back in (or prefix commands w
 
 | Service | URL |
 |---|---|
+| Buyer site | http://localhost:3000 |
+| Staff dashboard | http://localhost:3000/staff (sign in with `STAFF_TOKEN` from `.env`) |
 | n8n | http://localhost:5678 |
 | Odoo | http://localhost:8069 |
 | AI service | http://localhost:8000/healthz |
@@ -39,6 +41,19 @@ pip install -r services/ai-qualification/requirements-dev.txt
 make lint
 make test                                   # migration tests skip without a database
 make test-db TEST_DATABASE_URL=postgresql://postgres@localhost:5432/propflow_test
+```
+
+## Frontend
+
+`frontend/` is a React + TypeScript app (Vite) with two surfaces: the buyer site (verified
+listings, a sentence that is the search, the inquiry form) and the staff dashboard (handoffs
+by deadline, report figures with denominators, failed runs with replay, latest inquiries).
+In the stack it is the `web` service (nginx), which proxies only `/api/public` and
+`/api/staff` to the service. For development with hot reload:
+
+```bash
+npm --prefix frontend install
+npm --prefix frontend run dev     # http://localhost:5173, proxies /api to localhost:8000
 ```
 
 ## End-to-end scenarios

@@ -1,0 +1,161 @@
+.buyer { min-height: 100vh; display: flex; flex-direction: column; }
+.buyer main { flex: 1; }
+
+/* --- header ------------------------------------------------------------------------------- */
+.site-header {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.25rem var(--gutter);
+}
+.wordmark {
+  font-family: var(--font-display); font-weight: 600; font-size: var(--step-1);
+  color: var(--ink); text-decoration: none; letter-spacing: 0.01em;
+}
+.site-header nav { display: flex; gap: 1.5rem; }
+.site-header nav a { color: var(--ink-soft); text-decoration: none; }
+.site-header nav a:hover { color: var(--nile); text-decoration: underline; }
+
+/* --- hero: the sentence is the search ------------------------------------------------------ */
+.hero {
+  padding: clamp(2.5rem, 8vw, 6rem) var(--gutter) clamp(2rem, 5vw, 3.5rem);
+  max-width: 76rem;
+}
+.sentence {
+  font-size: clamp(var(--step-3), 5.2vw, var(--step-5));
+  font-weight: 500;
+  line-height: 1.22;
+  color: var(--ink);
+  max-width: 21ch;
+  text-wrap: balance;
+}
+.choice {
+  position: relative;
+  display: inline-block;
+  color: var(--nile);
+  text-decoration: underline;
+  text-decoration-color: var(--sandstone);
+  text-decoration-thickness: 0.07em;
+  text-underline-offset: 0.16em;
+  border-radius: 0.12em;
+  transition: background-color 120ms ease;
+}
+.choice-text { white-space: nowrap; }
+.choice:hover { background: var(--nile-wash); }
+.choice:focus-within { box-shadow: var(--focus); }
+.choice select {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  opacity: 0; cursor: pointer;
+  font-size: 1rem; /* the native picker uses normal text size */
+}
+.hero-foot {
+  margin-top: clamp(1.5rem, 3vw, 2.25rem);
+  display: grid; gap: 1.25rem;
+  max-width: var(--measure);
+}
+.match-line { color: var(--ink-soft); font-size: var(--step-0); }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+
+/* --- listings ------------------------------------------------------------------------------ */
+.listings {
+  padding: 0 var(--gutter) clamp(3rem, 6vw, 5rem);
+  max-width: 76rem;
+}
+.listing {
+  display: grid;
+  grid-template-columns: minmax(10rem, 14rem) minmax(0, 1fr) 7.5rem;
+  gap: 1.25rem 2rem;
+  align-items: start;
+  padding: 1.75rem 0;
+  border-top: 1px solid var(--rule);
+}
+.listing:last-child { border-bottom: 1px solid var(--rule); }
+.listing-price {
+  font-size: var(--step-2); font-weight: 500; line-height: 1.15; color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.listing-body h3 { font-size: var(--step-1); font-weight: 500; }
+.listing-facts { margin-top: 0.35rem; color: var(--ink-soft); }
+.listing-amenities::before { content: ". "; }
+.listing-desc { margin-top: 0.6rem; max-width: 60ch; }
+.listing-ask { margin-top: 0.9rem; padding-left: 0; padding-right: 0; border: 0; }
+.listing-ask:hover { background: transparent; text-decoration: underline; }
+
+/* The verification seal: the listing's promise, shown as a stamp. */
+.seal {
+  width: 7.25rem; aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1.5px solid var(--sandstone);
+  box-shadow: inset 0 0 0 4px var(--paper), inset 0 0 0 5px var(--sandstone);
+  display: grid; place-content: center; gap: 0.15rem;
+  text-align: center;
+  color: var(--sandstone-deep);
+  transform: rotate(-7deg);
+  justify-self: end;
+}
+.seal-text { font-size: var(--step--1); font-weight: 500; line-height: 1.2; padding: 0 0.9rem; }
+.seal-id { font-size: 0.6875rem; color: var(--ink-faint); }
+
+/* --- ask an advisor ------------------------------------------------------------------------ */
+.ask {
+  background: var(--paper-deep);
+  padding: clamp(3rem, 6vw, 5rem) var(--gutter);
+  display: grid;
+  grid-template-columns: minmax(0, 22rem) minmax(0, 38rem);
+  gap: 2.5rem clamp(2rem, 6vw, 5rem);
+  scroll-margin-top: 1rem;
+}
+.ask-intro h2 { font-size: var(--step-3); font-weight: 500; }
+.ask-intro p { margin-top: 1rem; color: var(--ink-soft); max-width: 34ch; }
+
+.inquiry-form { display: grid; gap: 1.1rem; }
+.inquiry-summary { color: var(--ink-soft); }
+.inquiry-summary strong { color: var(--ink); font-weight: 500; }
+.field { display: grid; gap: 0.35rem; }
+.field-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; }
+.field label { font-weight: 500; font-size: 0.9375rem; }
+.field input, .field select, .field textarea {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #c9cdc8;
+  border-radius: var(--radius-control);
+  padding: 0.65em 0.8em;
+}
+.field textarea { resize: vertical; min-height: 6rem; }
+.field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible {
+  border-color: var(--nile);
+}
+.field [aria-invalid="true"] { border-color: var(--brick); }
+.field-error { color: var(--brick); font-size: 0.9375rem; }
+.field-hint { color: var(--ink-faint); font-size: 0.9375rem; margin-top: -0.4rem; }
+.form-problem {
+  color: var(--brick); background: var(--brick-wash);
+  padding: 0.75rem 1rem; border-radius: var(--radius-control);
+}
+.honeypot { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.inquiry-form .btn[type="submit"] { justify-self: start; }
+
+.inquiry-done { display: grid; gap: 1rem; align-content: start; outline: none; }
+.inquiry-done h2 { font-size: var(--step-2); font-weight: 500; color: var(--palm); }
+.inquiry-done p { max-width: 52ch; }
+.inquiry-ref { color: var(--ink-soft); }
+.inquiry-done .btn { justify-self: start; }
+
+/* --- footer -------------------------------------------------------------------------------- */
+.site-footer {
+  padding: 2rem var(--gutter) 2.5rem;
+  color: var(--ink-faint); font-size: 0.9375rem;
+}
+.site-footer p { max-width: var(--measure); }
+
+/* --- small screens ------------------------------------------------------------------------- */
+@media (max-width: 760px) {
+  .listing { grid-template-columns: minmax(0, 1fr) 5.5rem; }
+  .listing-price { grid-column: 1; font-size: var(--step-1); }
+  .listing-body { grid-column: 1 / -1; grid-row: 2; }
+  .seal { grid-column: 2; grid-row: 1; width: 5.5rem; }
+  .seal-text { font-size: 0.6875rem; padding: 0 0.5rem; }
+  .seal-id { font-size: 0.5625rem; }
+  .ask { grid-template-columns: 1fr; }
+  .field-pair { grid-template-columns: 1fr; }
+}

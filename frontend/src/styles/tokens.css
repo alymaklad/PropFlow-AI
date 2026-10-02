@@ -1,0 +1,35 @@
+/* PropFlow design tokens. Palette from the Nile and Cairo stone; one display face (Reem Kufi,
+   Kufic-derived geometry) and one text face (Readex Pro). */
+:root {
+  --paper: #f7f7f4;
+  --paper-deep: #eeeee8;
+  --ink: #1d2a33;
+  --ink-soft: #4a5a66;
+  --ink-faint: #7a8792;
+  --nile: #0f5c6e;
+  --nile-deep: #0a4352;
+  --nile-wash: #e3eef0;
+  --sandstone: #c9a46a;
+  --sandstone-deep: #8a6a33;
+  --palm: #4b6b3c;
+  --brick: #b23a2e;
+  --brick-wash: #f6e6e3;
+  --rule: #d9dcd8;
+
+  --font-display: "Reem Kufi", "Readex Pro", system-ui, sans-serif;
+  --font-text: "Readex Pro", system-ui, sans-serif;
+
+  /* Type scale: a perfect fourth (1.333) from 1rem. */
+  --step--1: 0.8125rem;
+  --step-0: 1rem;
+  --step-1: 1.333rem;
+  --step-2: 1.777rem;
+  --step-3: 2.369rem;
+  --step-4: 3.157rem;
+  --step-5: 4.209rem;
+
+  --measure: 68ch;
+  --gutter: clamp(1rem, 4vw, 3rem);
+  --radius-control: 6px;
+  --focus: 0 0 0 3px var(--paper), 0 0 0 5px var(--nile);
+}

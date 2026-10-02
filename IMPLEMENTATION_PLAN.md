@@ -232,7 +232,7 @@ Goal: a **structured** web-form lead goes from webhook to Odoo, scored and assig
 | 4.4 Evaluation | Done: AI evaluation plus the eight system metrics from scenario records (`docs/evaluation-report.md`) |
 | 4.5 Demo | Script written (`docs/demo.md`); **the recording itself is for the owner to make** |
 | 4.6 Final sweep | Done: secret scan, synthetic data only, CV bullets rewritten to match what shipped (`docs/cv-summary.md`) |
-| Frontend | React buyer site and staff dashboard: next |
+| Frontend | Done: React + TypeScript (Vite) buyer site and staff dashboard, served by nginx (`web`, port 3000) through new `/public` and `/staff` APIs; verified in the browser on desktop and mobile, including an inquiry end to end into Odoo and the shortlist email |
 
 ---
 

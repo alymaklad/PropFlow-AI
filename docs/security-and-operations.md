@@ -15,6 +15,7 @@ customers are involved.
 | n8n ↔ AI service | Shared `X-API-Key` on every `/v1` call; the service fails closed if no key is configured. |
 | Service → Odoo | Dedicated integration user with an API key and the **PropFlow Integration** group: create/read/write leads and contacts, read teams/stages/tags. It cannot delete or archive leads, change settings or use other apps. |
 | Customer text → LLM | Delimited as data, no tools, schema-only output, deterministic injection and opt-out detection as a backup. Model output never authorises an action: scores are rule-based and n8n decides what happens. |
+| Browser → service | Only through nginx, which proxies `/api/public` and `/api/staff` (not `/v1`). Public inquiries: validation, honeypot, 5 per client per 10 minutes, browser-generated idempotency key, signed server-side. Staff API: bearer `STAFF_TOKEN` (development-grade; use SSO in production). CSP, `X-Frame-Options: DENY`, `nosniff`. |
 | All published ports | Bound to `127.0.0.1` in development. |
 
 ### Secrets
@@ -96,6 +97,7 @@ deliberately set `LLM_PROVIDER=none` and `docker compose up -d ai-service`.
 | Odoo integration API key | `make odoo-bootstrap` (issues a new key, writes `.env`, restarts ai-service and n8n; the old key is revoked) |
 | `AI_SERVICE_API_KEY` | New value in `.env`, then `docker compose up -d ai-service n8n` |
 | `WEBHOOK_HMAC_SECRET` | New value in `.env`, update every sender (form backend), then `docker compose up -d ai-service n8n` |
+| `STAFF_TOKEN` | New value in `.env`, then `docker compose up -d ai-service`; staff sign in again |
 | `GROQ_API_KEY` | Replace in `.env` (never paste it into chats or tickets), `docker compose up -d ai-service` |
 | `N8N_ENCRYPTION_KEY` | Do not rotate casually: stored n8n credentials become unreadable. Export credentials first, re-import after. |
 
@@ -172,4 +174,6 @@ deleted by an Odoo administrator.
   acceptable only on an n8n instance dedicated to PropFlow, otherwise move to n8n credentials.
 - Change the Odoo `admin` password, disable the demo seed, and plan the upgrade from Odoo 17.
 - A data-processing review before sending real customer messages to an LLM provider.
+- Put the staff dashboard behind SSO instead of the shared `STAFF_TOKEN`, and run the public
+  rate limit in a shared store if the service runs as several processes.
 - Turn off `saveDataSuccessExecution` in the workflows or shorten n8n retention further.

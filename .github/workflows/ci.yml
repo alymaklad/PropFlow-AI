@@ -40,6 +40,22 @@ jobs:
       - name: Dataset tests
         run: python -m pytest tests/data
 
+  frontend:
+    name: Frontend (type check and build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+
   secrets:
     name: Secret scan (full history)
     runs-on: ubuntu-latest

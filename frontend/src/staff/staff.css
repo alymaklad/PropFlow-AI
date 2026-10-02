@@ -1,0 +1,103 @@
+/* Staff dashboard: dense, calm, sentences over tiles. */
+.staff { min-height: 100vh; background: var(--paper); }
+
+.staff-header {
+  display: flex; align-items: center; gap: 1rem 1.5rem; flex-wrap: wrap;
+  padding: 1rem var(--gutter);
+  border-bottom: 1px solid var(--rule);
+  background: #fff;
+}
+.staff-brand { font-family: var(--font-display); font-weight: 600; font-size: var(--step-1); }
+.staff-header-end { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+.updated { color: var(--ink-faint); font-size: 0.875rem; margin-right: 0.5rem; }
+
+.period { display: inline-flex; border: 1px solid var(--rule); border-radius: var(--radius-control); overflow: hidden; }
+.period button {
+  border: 0; background: transparent; padding: 0.45em 0.9em; cursor: pointer; color: var(--ink-soft);
+}
+.period button[aria-pressed="true"] { background: var(--nile); color: var(--paper); }
+.period button + button { border-left: 1px solid var(--rule); }
+
+.staff-error {
+  margin: 1rem var(--gutter) 0; padding: 0.75rem 1rem;
+  color: var(--brick); background: var(--brick-wash); border-radius: var(--radius-control);
+}
+
+.staff-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  grid-template-areas: "handoffs figures" "leads failures";
+  gap: 2rem clamp(1.5rem, 3vw, 3rem);
+  padding: 2rem var(--gutter) 3rem;
+  align-items: start;
+}
+.panel-handoffs { grid-area: handoffs; }
+.panel-figures { grid-area: figures; }
+.panel-failures { grid-area: failures; }
+.panel-leads { grid-area: leads; }
+
+.panel h1 { font-size: var(--step-3); font-weight: 500; }
+.panel h2 { font-size: var(--step-1); font-weight: 500; margin-bottom: 0.9rem; }
+.lede-alert { color: var(--brick); margin-top: 0.4rem; font-weight: 500; }
+.muted { color: var(--ink-faint); }
+
+/* Handoffs: the work queue */
+.handoffs { list-style: none; padding: 0; margin: 1.25rem 0 0; }
+.handoff {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem 1.5rem;
+  padding: 1rem 0 1rem 1rem;
+  border-top: 1px solid var(--rule);
+  border-left: 3px solid var(--sandstone);
+}
+.handoff.is-overdue { border-left-color: var(--brick); }
+.handoff-who { font-weight: 500; }
+.handoff-lead { margin-left: 0.6rem; color: var(--ink-faint); font-weight: 400; font-size: 0.875rem; }
+.handoff-why { color: var(--ink); margin-top: 0.15rem; }
+.handoff-owner { color: var(--ink-soft); font-size: 0.9375rem; margin-top: 0.15rem; }
+.handoff-side { text-align: right; display: grid; gap: 0.3rem; align-content: start; }
+.handoff-due { font-size: 0.9375rem; color: var(--ink-soft); }
+.is-overdue .handoff-due { color: var(--brick); font-weight: 500; }
+
+/* Figures as sentences, each with its denominator */
+.figures { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.7rem; }
+.figures > li { padding-bottom: 0.7rem; border-bottom: 1px solid var(--rule); }
+.figures strong { font-weight: 600; color: var(--nile-deep); }
+.workload { list-style: none; padding: 0; margin: 0.4rem 0 0; display: grid; gap: 0.2rem; color: var(--ink-soft); }
+.is-bad { color: var(--brick); }
+
+/* Failed runs */
+.failures { list-style: none; padding: 0; margin: 0; display: grid; gap: 1rem; }
+.failure { padding: 1rem; background: #fff; border: 1px solid var(--rule); border-radius: var(--radius-control); }
+.failure-what { font-weight: 500; }
+.failure-error { color: var(--ink-soft); margin-top: 0.25rem; overflow-wrap: anywhere; font-size: 0.9375rem; }
+.failure-meta { color: var(--ink-faint); font-size: 0.875rem; margin-top: 0.25rem; }
+.failure-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; }
+.failure-result { margin-top: 0.75rem; color: var(--palm); font-weight: 500; }
+.discard { display: grid; gap: 0.35rem; margin-top: 0.75rem; }
+.discard label { font-size: 0.9375rem; font-weight: 500; }
+.discard input { border: 1px solid #c9cdc8; border-radius: var(--radius-control); padding: 0.5em 0.7em; background: #fff; }
+
+/* Latest inquiries */
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.9375rem; }
+th { text-align: left; font-weight: 500; color: var(--ink-soft); padding: 0.5rem 0.75rem 0.5rem 0; border-bottom: 1px solid var(--ink-faint); white-space: nowrap; }
+td { padding: 0.55rem 0.75rem 0.55rem 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+td.num { white-space: nowrap; }
+.tag-high { margin-left: 0.4rem; color: var(--nile); font-size: 0.8125rem; font-weight: 500; }
+
+/* Sign-in */
+.staff-signin { min-height: 100vh; display: grid; place-items: center; padding: var(--gutter); }
+.signin-panel { width: min(26rem, 100%); display: grid; gap: 0.8rem; }
+.signin-panel h1 { font-size: var(--step-3); font-weight: 500; }
+.signin-panel p { color: var(--ink-soft); }
+.signin-panel label { font-weight: 500; margin-top: 0.5rem; }
+.signin-panel input { border: 1px solid #c9cdc8; border-radius: var(--radius-control); padding: 0.65em 0.8em; background: #fff; }
+.signin-error { color: var(--brick); }
+.signin-panel .btn { justify-self: start; margin-top: 0.25rem; }
+.signin-back { font-size: 0.9375rem; }
+
+@media (max-width: 960px) {
+  .staff-grid { grid-template-columns: 1fr; grid-template-areas: "handoffs" "figures" "failures" "leads"; }
+  .handoff { grid-template-columns: 1fr; }
+  .handoff-side { text-align: left; }
+}

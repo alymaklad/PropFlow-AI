@@ -67,6 +67,8 @@ services:
       WEBHOOK_HMAC_SECRET: ${WEBHOOK_HMAC_SECRET:?set WEBHOOK_HMAC_SECRET in .env}
       N8N_INTAKE_URL: http://n8n:5678/webhook/propflow/intake
       MAX_CUSTOMER_EMAILS_PER_DAY: ${MAX_CUSTOMER_EMAILS_PER_DAY:-3}
+      # Staff dashboard sign-in (development-grade; put SSO in front in production)
+      STAFF_TOKEN: ${STAFF_TOKEN:?set STAFF_TOKEN in .env}
     ports:
       - "127.0.0.1:${AI_SERVICE_PORT:-8000}:8000"
     depends_on:
@@ -165,6 +167,17 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+
+  # --- Buyer site and staff dashboard (React, served by nginx; proxies /api/public, /api/staff) ---
+  web:
+    build:
+      context: ./frontend
+    <<: *restart
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:80"
+    depends_on:
+      ai-service:
+        condition: service_healthy
 
   # --- Dev inbound mailbox (leads@propflow.test) for email intake; SMTP 3025, IMAP 3143 ---
   # Authentication is disabled: any login works and mailboxes are created on first delivery.

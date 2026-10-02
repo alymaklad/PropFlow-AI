@@ -25,6 +25,7 @@ class Settings:
     qualify_min_confidence: float = 0.6
     n8n_intake_url: str = "http://n8n:5678/webhook/propflow/intake"
     max_customer_emails_per_day: int = 3
+    staff_token: str | None = None
     version: str = "0.1.0"
 
 
@@ -51,6 +52,7 @@ def load_settings() -> Settings:
         n8n_intake_url=os.environ.get("N8N_INTAKE_URL")
         or "http://n8n:5678/webhook/propflow/intake",
         max_customer_emails_per_day=int(os.environ.get("MAX_CUSTOMER_EMAILS_PER_DAY") or 3),
+        staff_token=os.environ.get("STAFF_TOKEN") or None,
     )
 
 
