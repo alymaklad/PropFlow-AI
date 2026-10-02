@@ -1,0 +1,6 @@
+# Keep LF endings everywhere so shell scripts and SQL work inside Linux containers,
+# even when the repo is checked out on Windows.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.gif binary

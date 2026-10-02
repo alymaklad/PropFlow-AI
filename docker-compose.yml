@@ -1,0 +1,163 @@
+# PropFlow AI: local development stack.
+# Usage: cp .env.example .env && docker compose up -d
+# All published ports bind to 127.0.0.1 only. Data lives in named volumes (not bind mounts).
+
+name: propflow
+
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  # --- Application database (event ledger, scores, property catalog, consents, ...) ---
+  propflow-db:
+    image: postgres:17
+    <<: *restart
+    environment:
+      POSTGRES_DB: ${PROPFLOW_DB_NAME:-propflow}
+      POSTGRES_USER: ${PROPFLOW_DB_USER:-propflow}
+      POSTGRES_PASSWORD: ${PROPFLOW_DB_PASSWORD:?set PROPFLOW_DB_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${PROPFLOW_DB_PORT:-5433}:5432"
+    volumes:
+      - propflow_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # --- One-shot: apply database/migrations/*.sql ---
+  migrate:
+    build:
+      context: .
+      dockerfile: services/ai-qualification/Dockerfile
+    command: ["python", "-m", "app.migrate"]
+    environment:
+      DATABASE_URL: postgresql://${PROPFLOW_DB_USER:-propflow}:${PROPFLOW_DB_PASSWORD}@propflow-db:5432/${PROPFLOW_DB_NAME:-propflow}
+      MIGRATIONS_DIR: /srv/migrations
+    depends_on:
+      propflow-db:
+        condition: service_healthy
+    restart: "no"
+
+  # --- AI qualification / scoring / matching service ---
+  ai-service:
+    build:
+      context: .
+      dockerfile: services/ai-qualification/Dockerfile
+    <<: *restart
+    environment:
+      DATABASE_URL: postgresql://${PROPFLOW_DB_USER:-propflow}:${PROPFLOW_DB_PASSWORD}@propflow-db:5432/${PROPFLOW_DB_NAME:-propflow}
+      AI_SERVICE_API_KEY: ${AI_SERVICE_API_KEY:?set AI_SERVICE_API_KEY in .env}
+      LLM_PROVIDER: ${LLM_PROVIDER:-fake}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
+    ports:
+      - "127.0.0.1:${AI_SERVICE_PORT:-8000}:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  # --- Odoo (CRM system of record) ---
+  odoo-db:
+    # Odoo 17 is tested against PostgreSQL up to 16
+    image: postgres:16
+    <<: *restart
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: ${ODOO_DB_USER:-odoo}
+      POSTGRES_PASSWORD: ${ODOO_DB_PASSWORD:?set ODOO_DB_PASSWORD in .env}
+    volumes:
+      - odoo_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  odoo:
+    image: odoo:${ODOO_VERSION:-17.0}
+    <<: *restart
+    command: ["odoo", "--db-filter=^${ODOO_DB_NAME:-propflow_odoo}$$", "--no-database-list"]
+    environment:
+      HOST: odoo-db
+      USER: ${ODOO_DB_USER:-odoo}
+      PASSWORD: ${ODOO_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:${ODOO_PORT:-8069}:8069"
+    volumes:
+      - odoo_web_data:/var/lib/odoo
+      - ./odoo/custom_addons:/mnt/extra-addons:ro
+    depends_on:
+      odoo-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request as u; u.urlopen('http://localhost:8069/web/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  # --- n8n (workflow orchestrator) ---
+  n8n:
+    image: n8nio/n8n:${N8N_VERSION:-2.42.2}
+    <<: *restart
+    environment:
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?set N8N_ENCRYPTION_KEY in .env}
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: http://localhost:${N8N_PORT:-5678}/
+      GENERIC_TIMEZONE: Africa/Cairo
+      TZ: Africa/Cairo
+      # Dev only: lets workflow expressions read the variables below via $env.
+      # Revisit for staging/production (prefer n8n credentials).
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      WEBHOOK_HMAC_SECRET: ${WEBHOOK_HMAC_SECRET:?set WEBHOOK_HMAC_SECRET in .env}
+      AI_SERVICE_URL: http://ai-service:8000
+      AI_SERVICE_API_KEY: ${AI_SERVICE_API_KEY}
+      ODOO_URL: ${ODOO_URL:-http://odoo:8069}
+      ODOO_DB_NAME: ${ODOO_DB_NAME:-propflow_odoo}
+      ODOO_INTEGRATION_LOGIN: ${ODOO_INTEGRATION_LOGIN:-propflow-integration}
+      ODOO_API_KEY: ${ODOO_API_KEY:-}
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+    ports:
+      - "127.0.0.1:${N8N_PORT:-5678}:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      ai-service:
+        condition: service_healthy
+      odoo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # --- Dev mail catcher: nothing sent here leaves the machine ---
+  mailpit:
+    image: axllent/mailpit:v1.31
+    <<: *restart
+    ports:
+      - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
+      - "127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  propflow_db_data:
+  odoo_db_data:
+  odoo_web_data:
+  n8n_data:

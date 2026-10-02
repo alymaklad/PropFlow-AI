@@ -1,0 +1,25 @@
+# secrets and local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# runtime data
+n8n/data/
+pgdata/
+*.log
+
+# editors / OS
+.idea/
+.vscode/
+.DS_Store
