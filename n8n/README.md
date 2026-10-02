@@ -6,6 +6,7 @@ The files in this folder are the source of truth. The n8n UI is at http://localh
 |---|---|---|
 | `workflows/lead-intake-a.json` | **PropFlow - Lead intake (A)** | `POST /webhook/propflow/intake` |
 | `workflows/email-intake-b.json` | **PropFlow - Email intake (B)** | New email in the leads inbox (IMAP) |
+| `workflows/reports.json` | **PropFlow - Reports (daily, weekly)** | 08:00 Sun-Thu, 08:30 Sunday, or on demand |
 | `workflows/scheduler.json` | **PropFlow - Scheduler (handoffs, follow-ups)** | Every 15 minutes |
 | `workflows/error-handler.json` | **PropFlow - Error handler** | Any failed run of the other workflows |
 | `credentials/mailpit-smtp.json` | Mailpit SMTP (dev) | No secret: Mailpit needs no login |
@@ -75,6 +76,13 @@ Every outgoing email sets Reply-To to the leads inbox, so customer replies land 
 activity is done, remind the rep after the deadline, then the manager) and `/v1/followups/due`
 (customer reminders), then the same send-and-mark steps. Messages only go out during business
 hours (Sunday to Thursday, 09:00-17:00 Cairo by default).
+
+## Reports
+
+Daily (08:00 Sunday to Thursday, previous 24 hours) and weekly (Sunday 08:30, previous 7 days)
+reports from `/v1/reports/summary`, emailed to `REPORT_EMAIL`. Use **Send daily report now**
+in the n8n editor (or `docker compose exec -e N8N_RUNNERS_BROKER_PORT=5690 n8n n8n execute
+--id=PropFlowReport01`) to send one on demand.
 
 ## Error handler
 

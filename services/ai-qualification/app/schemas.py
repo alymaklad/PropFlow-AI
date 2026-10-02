@@ -401,3 +401,15 @@ class ReplayOut(BaseModel):
 
 class DiscardRequest(BaseModel):
     reason: str = Field(min_length=3, max_length=500)
+
+
+
+class ReportRequest(BaseModel):
+    period: Literal["day", "week"] = "day"
+    end: datetime | None = None  # defaults to now; the window is [end - period, end)
+
+
+class ReportOut(BaseModel):
+    subject: str
+    text: str
+    report: dict

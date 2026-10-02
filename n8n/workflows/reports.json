@@ -1,0 +1,213 @@
+{
+  "id": "PropFlowReport01",
+  "name": "PropFlow - Reports (daily, weekly)",
+  "active": true,
+  "nodes": [
+    {
+      "id": "5f300000-0000-4000-8000-000000000001",
+      "name": "Daily 08:00 (Sun-Thu)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        200
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 0-4"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "5f300000-0000-4000-8000-000000000002",
+      "name": "Weekly Sunday 08:30",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        420
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 8 * * 0"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "5f300000-0000-4000-8000-000000000007",
+      "name": "Send daily report now",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "5f300000-0000-4000-8000-000000000003",
+      "name": "Daily report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        300,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AI_SERVICE_URL }}/v1/reports/summary",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.AI_SERVICE_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ period: 'day' }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "5f300000-0000-4000-8000-000000000004",
+      "name": "Weekly report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        300,
+        420
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AI_SERVICE_URL }}/v1/reports/summary",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.AI_SERVICE_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ period: 'week' }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "5f300000-0000-4000-8000-000000000006",
+      "name": "Email report",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        880,
+        300
+      ],
+      "parameters": {
+        "fromEmail": "={{ $env.NOTIFY_FROM_EMAIL }}",
+        "toEmail": "={{ $env.REPORT_EMAIL }}",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $json.text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "smtp": {
+          "id": "MailpitSmtpDev01",
+          "name": "Mailpit SMTP (dev)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily 08:00 (Sun-Thu)": {
+      "main": [
+        [
+          {
+            "node": "Daily report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekly Sunday 08:30": {
+      "main": [
+        [
+          {
+            "node": "Weekly report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send daily report now": {
+      "main": [
+        [
+          {
+            "node": "Daily report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily report": {
+      "main": [
+        [
+          {
+            "node": "Email report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekly report": {
+      "main": [
+        [
+          {
+            "node": "Email report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "PropFlowErrorWf1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  }
+}

@@ -16,6 +16,8 @@ def _matches(record: dict, domain: list) -> bool:
             actual = record.get(field)
             if op == "=":
                 stack.append(actual == value)
+            elif op == "!=":
+                stack.append(actual != value and not (value is False and actual is None))
             elif op == "in":
                 stack.append(actual in value)
             else:
@@ -41,11 +43,15 @@ class FakeOdoo:
         if model == "crm.team":
             return [{"id": self.team_id, "user_id": [self.MANAGER_ID, "Manager"]}]
         if model == "mail.activity":
-            ((_, _, ids),) = domain
-            live = {a["id"] for a in self.activities.values()} - self.done_activities
-            return [{"id": i} for i in ids if i in live]
+            live = [{"res_model": "crm.lead", "res_id": key[0], "summary": key[1],
+                     "date_deadline": a["deadline"], **a} for key, a in self.activities.items()
+                    if a["id"] not in self.done_activities]
+            return [{"id": a["id"]} for a in live if _matches(a, domain)]
         if model == "crm.team.member":
             return [{"user_id": [uid, f"Rep {uid}"]} for uid in self.members]
+        if model == "res.users" and domain and domain[0][1] == "in":
+            return [{"id": uid, "name": f"Rep {uid}"} for uid in domain[0][2]
+                    if uid in self.members]
         if model == "res.users":
             (_, _, uid), = domain
             if uid == self.MANAGER_ID:

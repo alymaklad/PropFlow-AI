@@ -138,6 +138,17 @@ claimed message are not counted. Send only `send: true` items, then report on
 All accept an optional `now` (ISO datetime) for tests and replays. Messages are only produced
 during business hours (`BUSINESS_TZ`, `BUSINESS_HOURS`, `BUSINESS_DAYS`).
 
+## `POST /v1/reports/summary`
+
+Body: `period` (`day` or `week`), optional `end` (defaults to now). Returns `subject`, plain
+`text` and the structured `report`: inquiries by source and outcome, intake success rate
+(completed / valid), CRM actions and sync success rate, priority distribution and qualified
+rate, AI outcomes, first-response time (median and average over leads whose first customer
+email was sent), match outcomes, reminder sequences by outcome, reminders sent, customer
+replies, overdue PropFlow activities in Odoo, handoffs by reason and escalation, dead letters,
+and workload per salesperson. Every rate carries its numerator and denominator. If Odoo is
+unreachable, the Odoo sections are marked unavailable and the rest is still returned.
+
 ## `POST /v1/messages/prepare` and `POST /v1/consents`
 
 `prepare` is the single path for customer messages: consent check (email address or phone),

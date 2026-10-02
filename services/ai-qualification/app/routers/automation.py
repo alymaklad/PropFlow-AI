@@ -21,6 +21,7 @@ from app.business_time import BusinessCalendar
 from app.config import Settings, get_settings
 from app.deps import get_db, get_odoo
 from app.odoo_client import OdooClient
+from app.reports import PERIODS, build_report, render_text
 from app.schemas import (
     ClockRequest,
     FollowupDueOut,
@@ -30,6 +31,8 @@ from app.schemas import (
     HandoffRequest,
     NextActionOut,
     NextActionRequest,
+    ReportOut,
+    ReportRequest,
     RouteOut,
     RouteRequest,
 )
@@ -113,3 +116,25 @@ def actions_next(body: NextActionRequest, conn: psycopg.Connection = Depends(get
         match=body.match.model_dump(), public_url=settings.odoo_public_url,
         now=_now(body.now))
     return NextActionOut(**result)
+
+
+def _optional_odoo(settings: Settings = Depends(get_settings)) -> OdooClient | None:
+    try:
+        return get_odoo(settings)
+    except Exception:  # not configured: the report marks Odoo sections unavailable
+        return None
+
+
+@router.post("/reports/summary", response_model=ReportOut)
+def report_summary(body: ReportRequest, conn: psycopg.Connection = Depends(get_db),
+                   odoo: OdooClient | None = Depends(_optional_odoo),
+                   cal: BusinessCalendar = Depends(get_calendar)) -> ReportOut:
+    end = _now(body.end)
+    start = end - PERIODS[body.period]
+    report = build_report(conn, odoo, cal, start=start, end=end)
+    label = "Daily" if body.period == "day" else "Weekly"
+    day = cal.local(end).strftime("%a %d %b %Y")
+    title = f"PropFlow {label.lower()} report, {day}"
+    return ReportOut(subject=f"[PropFlow] {label} report: {report['intake']['received']} "
+                             f"inquiries, {report['handoffs']['created']} handoffs ({day})",
+                     text=render_text(report, title), report=report)
