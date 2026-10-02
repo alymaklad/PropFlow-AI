@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-time setup of a fresh Oracle Cloud Ubuntu 24.04 VM for the PropFlow demo.
+# One-time setup of a fresh Ubuntu 24.04+ server (Oracle Cloud or AWS) for the PropFlow demo.
 # Run as the default "ubuntu" user:
 #   curl -fsSL https://raw.githubusercontent.com/<you>/<repo>/main/deploy/server-bootstrap.sh -o bootstrap.sh
 #   sudo bash bootstrap.sh https://github.com/<you>/<repo>.git
@@ -38,7 +38,9 @@ fi
 
 echo "==> SSH: keys only"
 sed -i 's/^#\?PasswordAuthentication .*/PasswordAuthentication no/' /etc/ssh/sshd_config
-systemctl reload ssh || systemctl reload sshd
+# Ubuntu 24.04+ starts sshd per connection (ssh.socket), so there may be no daemon to reload;
+# new connections read the config either way.
+systemctl try-reload-or-restart ssh.service sshd.service 2>/dev/null || true
 
 echo "==> Deploy user (used by GitHub Actions; can run docker, nothing else)"
 id "$DEPLOY_USER" >/dev/null 2>&1 || useradd --create-home --shell /bin/bash "$DEPLOY_USER"
