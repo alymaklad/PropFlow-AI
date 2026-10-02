@@ -125,3 +125,34 @@ def test_staff_fails_closed_without_configured_token():
         assert TestClient(app).get("/staff/session").status_code == 503
     finally:
         app.dependency_overrides.clear()
+
+
+
+@needs_db
+def test_public_config_and_daily_cap(migrated_db, monkeypatch):
+    migrated_db.execute(SEED)
+    app.dependency_overrides[get_settings] = lambda: Settings(
+        database_url=TEST_DATABASE_URL, api_key=TEST_API_KEY, llm_provider="fake",
+        webhook_hmac_secret=TEST_WEBHOOK_SECRET, demo_mode=True, public_daily_limit=2,
+        mail_viewer_path="/mail/")
+    monkeypatch.setattr(public, "forward_to_intake", lambda *a, **k: (202, {}))
+    public._hits.clear()
+    try:
+        client = TestClient(app)
+        assert client.get("/public/config").json() == {"demo": True, "mail_viewer": "/mail/"}
+        for n in range(2):
+            migrated_db.execute("INSERT INTO intake_events (idempotency_key, source, raw_payload)"
+                                " VALUES (%s, 'form', '{}')", (f"web:{n}",))
+        r = client.post("/public/inquiries", json=inquiry())
+        assert r.status_code == 429 and "today's inquiry limit" in r.json()["detail"]
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_public_config_outside_demo():
+    app.dependency_overrides[get_settings] = lambda: Settings(None, None, "fake")
+    try:
+        assert TestClient(app).get("/public/config").json() == {"demo": False,
+                                                               "mail_viewer": None}
+    finally:
+        app.dependency_overrides.clear()

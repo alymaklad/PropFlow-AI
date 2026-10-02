@@ -68,6 +68,22 @@ class PublicInquiry(BaseModel):
     website: str | None = Field(default=None, max_length=200)  # honeypot: humans leave it empty
 
 
+@router.get("/config")
+def public_config(settings: Settings = Depends(get_settings)) -> dict:
+    """What the buyer site needs to know about this deployment."""
+    return {"demo": settings.demo_mode,
+            "mail_viewer": settings.mail_viewer_path if settings.demo_mode else None}
+
+
+def daily_limit_reached(conn: psycopg.Connection, limit: int) -> bool:
+    if limit <= 0:
+        return False
+    (count,) = conn.execute(
+        "SELECT count(*) FROM intake_events WHERE idempotency_key LIKE 'web:%%'"
+        " AND received_at > now() - interval '24 hours'").fetchone()
+    return count >= limit
+
+
 @router.get("/listings")
 def listings(location: str | None = None, property_type: str | None = None,
              bedrooms: int | None = None, budget_max: int | None = None,
@@ -103,7 +119,8 @@ def listings(location: str | None = None, property_type: str | None = None,
 
 @router.post("/inquiries", status_code=202)
 def submit_inquiry(body: PublicInquiry, request: Request,
-                   settings: Settings = Depends(get_settings)):
+                   settings: Settings = Depends(get_settings),
+                   conn: psycopg.Connection = Depends(get_db)):
     reference = str(body.submission_id)[:8].upper()
     if body.website:  # a bot filled the hidden field: accept silently, do nothing
         return {"status": "accepted", "reference": reference}
@@ -111,6 +128,9 @@ def submit_inquiry(body: PublicInquiry, request: Request,
         raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS,
                             "Too many inquiries from this connection. Try again in a few "
                             "minutes.")
+    if daily_limit_reached(conn, settings.public_daily_limit):
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS,
+                            "This demo has reached today's inquiry limit. Try again tomorrow.")
     payload = {k: v for k, v in body.model_dump(exclude={"submission_id", "website"}).items()
                if v not in (None, "")}
     payload["source"] = "form"

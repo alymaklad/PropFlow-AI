@@ -26,6 +26,9 @@ class Settings:
     n8n_intake_url: str = "http://n8n:5678/webhook/propflow/intake"
     max_customer_emails_per_day: int = 3
     staff_token: str | None = None
+    demo_mode: bool = False
+    public_daily_limit: int = 0  # 0 = no daily cap
+    mail_viewer_path: str | None = None
     version: str = "0.1.0"
 
 
@@ -53,6 +56,9 @@ def load_settings() -> Settings:
         or "http://n8n:5678/webhook/propflow/intake",
         max_customer_emails_per_day=int(os.environ.get("MAX_CUSTOMER_EMAILS_PER_DAY") or 3),
         staff_token=os.environ.get("STAFF_TOKEN") or None,
+        demo_mode=os.environ.get("DEMO_MODE", "false").lower() == "true",
+        public_daily_limit=int(os.environ.get("PUBLIC_DAILY_LIMIT") or 0),
+        mail_viewer_path=os.environ.get("MAIL_VIEWER_PATH") or None,
     )
 
 

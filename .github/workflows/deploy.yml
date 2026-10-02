@@ -1,0 +1,69 @@
+name: Deploy
+
+# Deploys the public demo to the Oracle Cloud VM. Runs the full CI first.
+#   - push a tag like v1.0.0, or
+#   - Actions > Deploy > Run workflow, with a branch or tag.
+# Setup (once): docs/deployment-guide.md, "GitHub Actions".
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch or tag to deploy"
+        required: true
+        default: main
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://${{ vars.PUBLIC_HOST }}
+    env:
+      REF: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref_name }}
+    steps:
+      - name: Check the ref
+        run: |
+          if [[ ! "$REF" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+            echo "::error::Unexpected characters in ref: $REF"; exit 1
+          fi
+
+      - name: SSH key and known host
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Deploy on the server
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ServerAliveInterval=30 \
+            "deploy@$HOST" "/opt/propflow/deploy/deploy.sh '$REF'"
+
+      - name: Smoke test from outside
+        env:
+          PUBLIC_HOST: ${{ vars.PUBLIC_HOST }}
+        run: |
+          curl -fsS --retry 10 --retry-delay 6 --retry-all-errors "https://$PUBLIC_HOST/" > /dev/null
+          curl -fsS --retry 5 --retry-delay 6 --retry-all-errors \
+            "https://$PUBLIC_HOST/api/public/listings" | python3 -c \
+            "import json,sys; n=len(json.load(sys.stdin)['listings']); assert n > 0, 'no listings'; print(n, 'listings')"
+          code=$(curl -s -o /dev/null -w '%{http_code}' "https://$PUBLIC_HOST/api/staff/session")
+          [ "$code" = "401" ] || { echo "::error::staff API should require a token (got $code)"; exit 1; }

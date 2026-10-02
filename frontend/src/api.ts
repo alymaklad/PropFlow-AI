@@ -54,6 +54,14 @@ function query(filters: Filters): string {
   return text ? `?${text}` : "";
 }
 
+export type PublicConfig = { demo: boolean; mail_viewer: string | null };
+
+export async function getConfig(): Promise<PublicConfig> {
+  const response = await fetch("/api/public/config");
+  if (!response.ok) return { demo: false, mail_viewer: null };
+  return response.json();
+}
+
 export async function getListings(filters: Filters, signal?: AbortSignal): Promise<ListingsResponse> {
   const response = await fetch(`/api/public/listings${query(filters)}`, { signal });
   if (!response.ok) throw new Error(`Listings unavailable (${response.status})`);

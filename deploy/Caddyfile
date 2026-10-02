@@ -1,0 +1,22 @@
+# Public entry point for the demo. HTTPS certificates are obtained automatically.
+{$PUBLIC_HOST} {
+	encode zstd gzip
+
+	# Captured emails for reviewers (Mailpit), password protected.
+	handle /mail* {
+		basic_auth {
+			{$MAIL_VIEWER_USER} {$MAIL_VIEWER_PASSWORD_HASH}
+		}
+		reverse_proxy mailpit:8025
+	}
+
+	# Buyer site and staff dashboard (nginx proxies only /api/public and /api/staff).
+	handle {
+		reverse_proxy web:80
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+}

@@ -24,7 +24,7 @@ realistic always-free host.
 | Server | Oracle Cloud Always Free, Ampere A1 (ARM): start with 2 OCPU / 12 GB RAM, 100 GB disk, Ubuntu 24.04 | The free allowance covers up to 4 OCPU / 24 GB in total. Needs a card for identity verification. |
 | HTTPS + reverse proxy | Caddy (automatic Let's Encrypt certificates) | One container in front; only ports 80 and 443 open. |
 | Domain | DuckDNS subdomain, e.g. `propflow-demo.duckdns.org` | Free, up to 5 names. No email authentication possible (see section 6). |
-| Private admin access | Tailscale (free personal plan) | Odoo, n8n, Mailpit and the staff dashboard are reachable only over Tailscale, never from the internet. |
+| Private admin access | SSH tunnel (Tailscale optional) | Odoo and n8n are reachable only through an SSH tunnel. The staff dashboard and the mail viewer are public but protected by credentials shared with reviewers. |
 | Bot protection | Cloudflare Turnstile (free) on the inquiry form | Works on any domain; small frontend and service change. |
 | Outgoing email | **Keep Mailpit**: emails are captured, not delivered | A public form that emails any address would be a spam tool. Reviewers see the emails in Mailpit (private, or behind a password). |
 | LLM | Groq free tier (1,000 requests/day, 8,000 tokens/minute measured) | Enough for a demo; the built-in fallback hands leads to a person when it runs out. |
@@ -157,10 +157,13 @@ requirements:
 - Groq models get deprecated; the model name is configuration (`GROQ_MODEL`), and `make eval`
   shows whether a replacement is as accurate.
 
-## 7. Decisions needed
+## 7. Decisions (2026-10-03)
 
-1. Demo only, or a later pilot with real customers (which needs a domain and the legal review)?
-2. Oracle Cloud account (needs a card for verification), or the zero-commitment fallback of
-   demos from your own machine through a temporary tunnel?
-3. Should reviewers see the captured emails (Mailpit behind a password) or only screenshots?
-4. Manual deploys over SSH, or the GitHub Actions deploy job?
+1. **Demo only**, to show a company during a job application.
+2. **Oracle Cloud** Always Free VM.
+3. **GitHub Actions** deploys (`.github/workflows/deploy.yml`).
+4. Reviewers get the buyer site publicly and, with credentials you share, the staff dashboard
+   (`/staff`) and the captured emails (`/mail/`, Mailpit behind a password). Odoo and n8n stay
+   private and are shown with screenshots or a video.
+
+Step-by-step instructions: `docs/deployment-guide.md`.

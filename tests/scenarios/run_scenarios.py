@@ -78,14 +78,17 @@ def odoo_uid() -> int:
     return _uid[0]
 
 
+MAILPIT = f"http://localhost:{ENV.get('MAILPIT_UI_PORT', '8025')}{ENV.get('MAILPIT_WEBROOT', '')}"
+
+
 def mails_to(address: str) -> list[dict]:
-    url = (f"http://localhost:{ENV.get('MAILPIT_UI_PORT', '8025')}/api/v1/search?query="
+    url = (f"{MAILPIT}/api/v1/search?query="
            + urllib.parse.quote(f"to:{address}"))
     return json.load(urllib.request.urlopen(url, timeout=15))["messages"]
 
 
 def mail_detail(message_id: str) -> dict:
-    url = f"http://localhost:{ENV.get('MAILPIT_UI_PORT', '8025')}/api/v1/message/{message_id}"
+    url = f"{MAILPIT}/api/v1/message/{message_id}"
     return json.load(urllib.request.urlopen(url, timeout=15))
 
 

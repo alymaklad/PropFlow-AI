@@ -1,6 +1,17 @@
 .buyer { min-height: 100vh; display: flex; flex-direction: column; }
 .buyer main { flex: 1; }
 
+/* --- demo notice ------------------------------------------------------------------------- */
+.demo-banner {
+  margin: 0;
+  padding: 0.6rem var(--gutter);
+  background: #f3ecdf;
+  border-bottom: 1px solid #e3d5bb;
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+}
+.demo-banner a { color: var(--sandstone-deep); font-weight: 500; }
+
 /* --- header ------------------------------------------------------------------------------- */
 .site-header {
   display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;

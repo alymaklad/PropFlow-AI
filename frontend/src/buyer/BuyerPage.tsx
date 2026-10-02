@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { type Listing, type ListingsResponse, getListings } from "../api";
+import { type Listing, type ListingsResponse, type PublicConfig, getConfig, getListings } from "../api";
 import { plural } from "../format";
 import { InquiryForm } from "./InquiryForm";
 import { ListingRow } from "./ListingRow";
@@ -14,6 +14,9 @@ export function BuyerPage() {
   const [loadError, setLoadError] = useState(false);
   const [message, setMessage] = useState("");
   const formRef = useRef<HTMLElement>(null);
+  const [config, setConfig] = useState<PublicConfig>({ demo: false, mail_viewer: null });
+
+  useEffect(() => { getConfig().then(setConfig).catch(() => undefined); }, []);
 
   const filters = useMemo(() => ({
     property_type: search.type !== "any" ? search.type : undefined,
@@ -47,6 +50,13 @@ export function BuyerPage() {
 
   return (
     <div className="buyer">
+      {config.demo && (
+        <p className="demo-banner">
+          This is a demo with fictional homes and data. Emails are captured, not delivered
+          {config.mail_viewer ? <>: see them in the <a href={config.mail_viewer}>mail viewer</a> (password in the application).</> : "."}
+          {" "}The <Link to="/staff">staff dashboard</Link> shows what happens next.
+        </p>
+      )}
       <header className="site-header">
         <Link to="/" className="wordmark">PropFlow Homes</Link>
         <nav aria-label="Main">
