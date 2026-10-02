@@ -1,0 +1,162 @@
+{
+  "generated_at": "2026-10-02T17:44:10+00:00",
+  "conditions": {
+    "model": "openai/gpt-oss-120b",
+    "prompt_version": "qualify-v2",
+    "min_confidence": 0.6,
+    "records": 60,
+    "english_records": 50,
+    "delay_seconds": 3.0,
+    "dataset": "sample-data/synthetic-leads.json (synthetic, labeled)"
+  },
+  "extraction_accuracy": {
+    "numerator": 436,
+    "denominator": 444,
+    "rate": 0.982
+  },
+  "field_accuracy": {
+    "property_type": {
+      "numerator": 49,
+      "denominator": 49,
+      "rate": 1.0
+    },
+    "location": {
+      "numerator": 50,
+      "denominator": 50,
+      "rate": 1.0
+    },
+    "bedrooms": {
+      "numerator": 49,
+      "denominator": 49,
+      "rate": 1.0
+    },
+    "budget_min": {
+      "numerator": 49,
+      "denominator": 49,
+      "rate": 1.0
+    },
+    "budget_max": {
+      "numerator": 49,
+      "denominator": 49,
+      "rate": 1.0
+    },
+    "currency": {
+      "numerator": 50,
+      "denominator": 50,
+      "rate": 1.0
+    },
+    "delivery_preference": {
+      "numerator": 49,
+      "denominator": 49,
+      "rate": 1.0
+    },
+    "purchase_timeline_months": {
+      "numerator": 49,
+      "denominator": 49,
+      "rate": 1.0
+    },
+    "purchase_intent": {
+      "numerator": 42,
+      "denominator": 50,
+      "rate": 0.84
+    }
+  },
+  "review_decision": {
+    "tp": 20,
+    "fp": 1,
+    "fn": 0,
+    "tn": 39,
+    "precision": 0.9524,
+    "recall": 1.0,
+    "accuracy": 0.9833
+  },
+  "opt_out_detection": {
+    "tp": 3,
+    "fp": 0,
+    "fn": 0,
+    "tn": 57,
+    "precision": 1.0,
+    "recall": 1.0,
+    "accuracy": 1.0
+  },
+  "injection_detection": {
+    "numerator": 4,
+    "denominator": 4,
+    "rate": 1.0
+  },
+  "non_english_routed_to_review": {
+    "numerator": 10,
+    "denominator": 10,
+    "rate": 1.0
+  },
+  "statuses": {
+    "valid": 52,
+    "unsupported_language": 8
+  },
+  "latency_seconds": {
+    "median": 2.394,
+    "p90": 11.943
+  },
+  "mismatches": [
+    {
+      "id": "L030",
+      "field": "purchase_intent",
+      "expected": "low",
+      "got": "unknown"
+    },
+    {
+      "id": "L040",
+      "field": "purchase_intent",
+      "expected": "medium",
+      "got": "low"
+    },
+    {
+      "id": "L043",
+      "field": "purchase_intent",
+      "expected": "medium",
+      "got": "high"
+    },
+    {
+      "id": "L044",
+      "field": "purchase_intent",
+      "expected": "unknown",
+      "got": "medium"
+    },
+    {
+      "id": "L045",
+      "field": "purchase_intent",
+      "expected": "medium",
+      "got": "low"
+    },
+    {
+      "id": "L046",
+      "field": "purchase_intent",
+      "expected": "medium",
+      "got": "low"
+    },
+    {
+      "id": "L051",
+      "field": "purchase_intent",
+      "expected": "medium",
+      "got": "high"
+    },
+    {
+      "id": "L057",
+      "field": "purchase_intent",
+      "expected": "unknown",
+      "got": "low"
+    }
+  ],
+  "decision_mismatches": [
+    {
+      "id": "L058",
+      "expected_review": false,
+      "got_review": true,
+      "reasons": [
+        "customer_requested_human"
+      ],
+      "expected_opt_out": false,
+      "got_opt_out": false
+    }
+  ]
+}

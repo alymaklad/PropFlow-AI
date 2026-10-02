@@ -18,7 +18,7 @@ the project owner) or **Proposed** (a default awaiting confirmation).
 
 | # | Decision | Status | Notes |
 |---|---|---|---|
-| 1 | LLM: **Groq, `openai/gpt-oss-120b`** (`openai/gpt-oss-20b` as fallback), behind a provider-agnostic `LLMClient` with a `fake` provider | Accepted | Both support Groq's strict JSON-schema mode. Prompts leave the machine, so synthetic data only. Confirm free-tier limits before eval runs. |
+| 1 | LLM: **Groq, `openai/gpt-oss-120b`** (`openai/gpt-oss-20b` as fallback), behind a provider-agnostic `LLMClient` with a `fake` provider | Accepted | Strict JSON-schema mode verified on the first real call. Free tier: 1,000 requests/day and 8,000 tokens/minute, about 4 qualifications per minute (~2,000 tokens each); bursts are absorbed by Retry-After retries, then fall back to a handoff. Prompts leave the machine, so synthetic data only. |
 | 2 | Odoo **Community 17.0**, pinned (`ODOO_VERSION`), PostgreSQL 16 for its database | Accepted | Odoo supports only its three latest major versions, so 17 is leaving official support. Acceptable for synthetic data; reassess before any real deployment. |
 | 3 | Odoo API: **JSON-RPC `/jsonrpc` `execute_kw`**, API key in place of the password | Accepted | JSON-2 does not exist in 17. Unverified against a running instance (task 0.3). All Odoo calls go through one client. |
 | 4 | Scoring and property matching live in the Python service, not in n8n Code nodes | Proposed | Testable and versionable. |

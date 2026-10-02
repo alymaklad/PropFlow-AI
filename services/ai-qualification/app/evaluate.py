@@ -4,7 +4,7 @@ Runs the labeled dataset through the qualification graph and reports per-field a
 decision metrics, with sample size and conditions. Intended to run inside the service
 container against the configured provider:
 
-  docker compose exec -T ai-service python -m app.evaluate --delay 2.5 \
+  docker compose exec -T ai-service python -m app.evaluate --delay 15 \
       < sample-data/synthetic-leads.json > docs/eval/latest.json
 
 Field accuracy is exact match on English records only, skipping each record's `skip_fields`.
@@ -118,7 +118,7 @@ def evaluate(records: list[dict], llm: LLMClient, *, min_confidence: float = 0.6
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Evaluate extraction on the labeled dataset")
-    parser.add_argument("--delay", type=float, default=2.5,
+    parser.add_argument("--delay", type=float, default=15,
                         help="seconds between records (stay under provider rate limits)")
     parser.add_argument("--limit", type=int, help="only the first N records")
     args = parser.parse_args()

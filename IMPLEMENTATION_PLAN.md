@@ -179,7 +179,7 @@ Goal: a **structured** web-form lead goes from webhook to Odoo, scored and assig
 | 2.3 Prompt-injection handling | Done: delimited input, no model tools, deterministic pattern backup, adversarial dataset cases |
 | 2.4 Deterministic fallback | Done: provider down or output invalid hands off; form fields still flow |
 | 2.5 AI trace | Done: `qualifications` row per call (migration 0003) |
-| 2.6 Evaluation harness | Done (`make eval`); **real-model results pending a Groq key** |
+| 2.6 Evaluation harness | Done: `make eval`; results in `docs/evaluation-report.md` (98.2–99.3% field accuracy, review recall 100%) |
 | 2.7 Property catalog | Done: 37 synthetic listings, freshness and availability filters |
 | 2.8 Match outcomes | Done: matched, none (handoff), insufficient criteria (clarify), conflict (handoff) |
 | 2.9 Handoff | Done: deadline, activity, context note, rep and customer emails, reminder then manager; verified live including resolution |
