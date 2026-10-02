@@ -32,6 +32,9 @@ the project owner) or **Proposed** (a default awaiting confirmation).
 | 12 | Escalation is a **handoff to a salesperson**, not an approval queue | Accepted | See below. |
 | 13 | The Odoo client lives in the Python service (`/v1/crm`), not in n8n nodes | Accepted | JSON-RPC errors arrive as HTTP 200 with an error body, and the search-before-create logic needs unit tests. n8n still orchestrates every step. |
 | 14 | A repeat inquiry from a known contact is added to the open lead as a note and only fills its missing fields | Accepted | Never overwrites rep-edited values or downgrades the score. |
+| 15 | Webhook HMAC signatures are verified in the service (`/v1/intake/receive`), not in n8n | Accepted | n8n's Code node blocks `crypto`; the service check is unit-tested. Unsigned requests are not stored. |
+| 16 | Outbound messages are at most once | Accepted | Claimed in `outbound_messages` before sending; a crash mid-send leaves it `pending` and visible, never resent automatically. |
+| 17 | The intake webhook answers `202` once the lead is validated; scoring and CRM work continue after the response | Accepted | Form submitters are not kept waiting on Odoo. Failures after `202` go to the error handler and dead-letter queue. |
 
 ## Stack topology (docker-compose.yml)
 

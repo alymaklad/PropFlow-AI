@@ -1,0 +1,155 @@
+{
+  "id": "PropFlowErrorWf1",
+  "name": "PropFlow - Error handler",
+  "active": true,
+  "nodes": [
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000065",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000066",
+      "name": "Build dead letter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Error Trigger payload -> dead-letter record. The intake workflow puts the correlation id in\n// its error message, so it is recovered here when present.\nconst e = $input.first().json;\nconst message = String(e.execution?.error?.message || 'unknown error');\nconst match = message.match(/correlation ([0-9a-f-]{36})/);\nreturn [{ json: {\n  workflow: e.workflow?.name || 'unknown',\n  error: message.slice(0, 4900),\n  correlation_id: match ? match[1] : null,\n  payload: {\n    execution_id: e.execution?.id ?? null,\n    execution_url: e.execution?.url ?? null,\n    last_node: e.execution?.lastNodeExecuted ?? null,\n    workflow_id: e.workflow?.id ?? null,\n    mode: e.execution?.mode ?? null,\n  },\n} }];"
+      }
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000067",
+      "name": "Store dead letter",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AI_SERVICE_URL }}/v1/dead-letters",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.AI_SERVICE_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000068",
+      "name": "Compose alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const d = $('Build dead letter').first().json;\nconst stored = $json.id ? `Dead letter: ${$json.id}` : 'WARNING: the dead letter could not be stored.';\nreturn [{ json: {\n  to: $env.ALERT_EMAIL,\n  subject: `[PropFlow] Workflow failed: ${d.workflow}`,\n  text: [\n    `Workflow: ${d.workflow}`,\n    `Failed node: ${d.payload.last_node || 'unknown'}`,\n    `Error: ${d.error}`,\n    d.correlation_id ? `Correlation id: ${d.correlation_id}` : null,\n    stored,\n    d.payload.execution_url ? `Execution: ${d.payload.execution_url}` : null,\n    '', 'Fix the cause, then replay the event (a redelivery of a failed event is processed again).',\n  ].filter(Boolean).join('\\n'),\n} }];"
+      }
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000069",
+      "name": "Alert ops",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        880,
+        300
+      ],
+      "parameters": {
+        "fromEmail": "={{ $env.NOTIFY_FROM_EMAIL }}",
+        "toEmail": "={{ $json.to }}",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $json.text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "smtp": {
+          "id": "MailpitSmtpDev01",
+          "name": "Mailpit SMTP (dev)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build dead letter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build dead letter": {
+      "main": [
+        [
+          {
+            "node": "Store dead letter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store dead letter": {
+      "main": [
+        [
+          {
+            "node": "Compose alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose alert": {
+      "main": [
+        [
+          {
+            "node": "Alert ops",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  }
+}

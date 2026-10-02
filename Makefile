@@ -2,7 +2,7 @@
 PYTHON ?= python3
 SERVICE := services/ai-qualification
 
-.PHONY: help up down logs ps migrate odoo-init odoo-bootstrap odoo-seed odoo-update odoo-test lint test test-db dataset
+.PHONY: help up down logs ps migrate odoo-init odoo-bootstrap odoo-seed odoo-update odoo-test n8n-import n8n-export lint test test-db dataset
 
 help:
 	@grep -E '^[a-z-]+:' Makefile | cut -d: -f1 | sort
@@ -40,6 +40,14 @@ odoo-update:
 # propflow_crm tests in a separate database
 odoo-test:
 	scripts/odoo-test.sh
+
+# Load n8n credentials + workflows from the repo and publish them
+n8n-import:
+	scripts/n8n-import.sh
+
+# Save workflows edited in the n8n UI back to n8n/workflows/
+n8n-export:
+	scripts/n8n-export.sh
 
 lint:
 	ruff check .

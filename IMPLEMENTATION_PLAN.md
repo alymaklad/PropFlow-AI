@@ -146,9 +146,12 @@ Goal: a **structured** web-form lead goes from webhook to Odoo, scored and assig
 | 1.2 `/normalize` | Done |
 | 1.3 `/score` | Done: matches all 60 labeled scores |
 | 1.4 Odoo client | Done, in the Python service (`/v1/crm`, decision 13): retries, error classes, duplicate-safe upsert; verified live |
-| 1.5 n8n Workflow A | Next |
+| 1.5 n8n Workflow A | Done: signed webhook, 202 after validation, idempotent under 6 simultaneous deliveries |
 | 1.6 Round-robin and follow-up activity | Done: concurrency-safe; verified live with a seeded demo team |
-| 1.7–1.10 | Not started |
+| 1.7 Rep notification | Done: high-priority email via Mailpit, at most once (outbound ledger) |
+| 1.8 Error workflow | Done: dead letter + ops alert; verified with Odoo stopped, then recovered by redelivery |
+| 1.9 Invalid payloads | Done: bad signature 401 (not stored); invalid or non-object payloads 422 and stored as rejected. Unparseable JSON is refused by n8n itself (422) before reaching the ledger |
+| 1.10 Workflow export/import | Done: `make n8n-export` / `make n8n-import` |
 
 ### Phase 2: AI qualification, matching, escalation (≈ 3 weeks)
 

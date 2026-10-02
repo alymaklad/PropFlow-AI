@@ -13,6 +13,9 @@ class Settings:
     odoo_login: str | None = None
     odoo_api_key: str | None = None
     odoo_sales_team_id: int | None = None
+    odoo_public_url: str = "http://localhost:8069"
+    webhook_hmac_secret: str | None = None
+    webhook_max_skew_seconds: int = 300
     version: str = "0.1.0"
 
 
@@ -27,6 +30,8 @@ def load_settings() -> Settings:
         odoo_login=os.environ.get("ODOO_INTEGRATION_LOGIN") or None,
         odoo_api_key=os.environ.get("ODOO_API_KEY") or None,
         odoo_sales_team_id=int(team) if team else None,
+        odoo_public_url=os.environ.get("ODOO_PUBLIC_URL") or "http://localhost:8069",
+        webhook_hmac_secret=os.environ.get("WEBHOOK_HMAC_SECRET") or None,
     )
 
 

@@ -55,6 +55,27 @@ Output: `total` (0–100), `priority` (`high` ≥ 80, `standard` ≥ 50, otherwi
 human-readable `reason`. Rules live in `app/data/scoring_rules.json`. Changing points or
 thresholds requires a new `version`.
 
+## Webhook signing
+
+Senders sign every request to the n8n webhook:
+
+```
+X-PropFlow-Timestamp: <unix seconds>
+X-PropFlow-Signature: sha256=<hex HMAC-SHA256(WEBHOOK_HMAC_SECRET, "<timestamp>.<raw body>")>
+X-Idempotency-Key: <optional sender event id>
+```
+
+The timestamp must be within 5 minutes of the service clock. `scripts/send_lead.py` is a
+reference implementation.
+
+## `POST /v1/intake/receive`
+
+Used by the n8n webhook. Body: `raw_body` (the exact bytes received, as text), `timestamp`,
+`signature`, optional `idempotency_key`, `source`. Verifies the signature, parses the body and
+claims the event (as `/claim` below), returning the claim fields plus `payload`.
+`401`: missing or invalid signature (not stored). `422`: signed but not a JSON object (stored
+as `rejected` with error `malformed_json`). `503`: no webhook secret configured.
+
 ## `POST /v1/intake/claim`
 
 Records an inbound event in the ledger exactly once. Body: `source`, `raw_payload` (the
@@ -94,6 +115,19 @@ Body: `user_id` (the owner; `null` returns `scheduled: false` with warning `no_o
 `priority`. Schedules one "PropFlow follow-up" To-Do for the owner (repeat calls return the
 same activity) and sets the lead's next follow-up date. Due date by priority, in business
 days (Sunday to Thursday): high is the same day, standard +1, nurture +3.
+
+## `POST /v1/outbound/claim` and `POST /v1/outbound/{message_id}/status`
+
+The "record before send" ledger. Claim with `lead_ref`, `channel`, `template` and
+`sequence_no`; send only if the response says `send: true`, then report `sent` (with
+`provider_msg_id`), `failed` or `cancelled`. A failed message may be claimed again; a message
+left `pending` by a crash mid-send is never resent automatically (it may have gone out), so
+delivery is at most once.
+
+## `POST /v1/dead-letters`
+
+Body: `workflow`, `error`, optional `correlation_id` and `payload` (execution metadata).
+Returns `201` with the id.
 
 ## Health
 

@@ -116,11 +116,19 @@ class UpsertRequest(BaseModel):
     exception_status: Literal["none", "handoff", "sync_error"] = "none"
 
 
+class OwnerOut(BaseModel):
+    id: int
+    name: str
+    email: str | None
+
+
 class UpsertOut(BaseModel):
     lead_id: int
+    lead_url: str
     action: Literal["created", "updated", "matched_contact"]
     user_id: int | None
     team_id: int | None
+    owner: OwnerOut | None
     warnings: list[str]
 
 
@@ -135,3 +143,49 @@ class FollowupOut(BaseModel):
     activity_id: int | None
     deadline: date | None
     warnings: list[str]
+
+
+class ReceiveRequest(BaseModel):
+    """What n8n forwards from the webhook: the exact raw body plus the signature headers."""
+
+    source: Source = "form"
+    raw_body: str = Field(max_length=100_000)
+    timestamp: str | None = None
+    signature: str | None = None
+    idempotency_key: str | None = Field(default=None, min_length=1, max_length=200)
+
+
+class ReceiveOut(ClaimOut):
+    payload: dict
+
+
+# --- outbound message ledger and dead letters ----------------------------------------------------
+
+class OutboundClaimRequest(BaseModel):
+    lead_ref: str = Field(min_length=1, max_length=200)
+    channel: Literal["email", "whatsapp"] = "email"
+    template: str = Field(min_length=1, max_length=100)
+    sequence_no: int = Field(default=1, ge=1)
+
+
+class OutboundClaimOut(BaseModel):
+    message_id: UUID
+    send: bool  # false: this message was already sent, or an attempt is in an unknown state
+    status: str
+
+
+class OutboundStatusRequest(BaseModel):
+    status: Literal["sent", "failed", "cancelled"]
+    provider_msg_id: str | None = Field(default=None, max_length=300)
+    error: str | None = Field(default=None, max_length=2000)
+
+
+class DeadLetterRequest(BaseModel):
+    workflow: str = Field(min_length=1, max_length=200)
+    error: str = Field(min_length=1, max_length=5000)
+    correlation_id: UUID | None = None
+    payload: dict = Field(default_factory=dict)
+
+
+class DeadLetterOut(BaseModel):
+    id: UUID

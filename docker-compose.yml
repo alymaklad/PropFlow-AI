@@ -58,6 +58,8 @@ services:
       ODOO_INTEGRATION_LOGIN: ${ODOO_INTEGRATION_LOGIN:-propflow-integration}
       ODOO_API_KEY: ${ODOO_API_KEY:-}
       ODOO_SALES_TEAM_ID: ${ODOO_SALES_TEAM_ID:-}
+      ODOO_PUBLIC_URL: ${ODOO_PUBLIC_URL:-http://localhost:8069}
+      WEBHOOK_HMAC_SECRET: ${WEBHOOK_HMAC_SECRET:?set WEBHOOK_HMAC_SECRET in .env}
     ports:
       - "127.0.0.1:${AI_SERVICE_PORT:-8000}:8000"
     depends_on:
@@ -118,7 +120,7 @@ services:
       N8N_HOST: localhost
       N8N_PORT: 5678
       N8N_PROTOCOL: http
-      WEBHOOK_URL: http://localhost:${N8N_PORT:-5678}/
+      N8N_WEBHOOK_URL: http://localhost:${N8N_PORT:-5678}/
       GENERIC_TIMEZONE: Africa/Cairo
       TZ: Africa/Cairo
       # Dev only: lets workflow expressions read the variables below via $env.
@@ -133,6 +135,8 @@ services:
       ODOO_API_KEY: ${ODOO_API_KEY:-}
       SMTP_HOST: ${SMTP_HOST:-mailpit}
       SMTP_PORT: ${SMTP_PORT:-1025}
+      NOTIFY_FROM_EMAIL: ${NOTIFY_FROM_EMAIL:-propflow-noreply@example.com}
+      ALERT_EMAIL: ${ALERT_EMAIL:-ops@example.com}
     ports:
       - "127.0.0.1:${N8N_PORT:-5678}:5678"
     volumes:

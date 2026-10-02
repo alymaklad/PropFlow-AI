@@ -1,0 +1,967 @@
+{
+  "id": "PropFlowIntakeA1",
+  "name": "PropFlow - Lead intake (A)",
+  "active": true,
+  "nodes": [
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "6a9f3c1e-2b7d-4e8a-9c51-7d2e4f0a1b30",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "propflow/intake",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      }
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000002",
+      "name": "Prepare receive request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Forward the exact raw body and signature headers; the service verifies the signature.\nconst item = $input.first();\nconst headers = item.json.headers || {};\nlet rawBody = '';\ntry {\n  rawBody = (await this.helpers.getBinaryDataBuffer(0, 'data')).toString('utf8');\n} catch (e) {\n  rawBody = '';\n}\nreturn [{ json: {\n  source: 'form',\n  raw_body: rawBody,\n  timestamp: headers['x-propflow-timestamp'] || null,\n  signature: headers['x-propflow-signature'] || null,\n  idempotency_key: headers['x-idempotency-key'] || null,\n} }];"
+      }
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000003",
+      "name": "Receive & claim",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AI_SERVICE_URL }}/v1/intake/receive",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.AI_SERVICE_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 20000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000004",
+      "name": "Route receipt",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        660,
+        300
+      ],
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 3,
+        "output": "={{ $json.statusCode !== 200 ? 0 : ($json.body.proceed ? 2 : 1) }}"
+      }
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000005",
+      "name": "Respond: refused",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        880,
+        80
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'refused', detail: $json.body.detail }) }}",
+        "options": {
+          "responseCode": "={{ [401, 422].includes($json.statusCode) ? $json.statusCode : 503 }}"
+        }
+      }
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000006",
+      "name": "Respond: duplicate",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        880,
+        240
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'duplicate', correlation_id: $json.body.correlation_id, event_status: $json.body.status }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000007",
+      "name": "Normalize",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        880,
+        420
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AI_SERVICE_URL }}/v1/normalize",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.AI_SERVICE_API_KEY }}"
+            },
+            {
+              "name": "X-Correlation-ID",
+              "value": "={{ $('Receive & claim').first().json.body.correlation_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Receive & claim').first().json.body.payload) }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000008",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1100,
+        420
+      ],
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $json.valid ? 1 : 0 }}"
+      }
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000009",
+      "name": "Mark rejected",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1320,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AI_SERVICE_URL }}/v1/intake/{{ $('Receive & claim').first().json.body.event_id }}/status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.AI_SERVICE_API_KEY }}"
+            },
+            {
+              "name": "X-Correlation-ID",
+              "value": "={{ $('Receive & claim').first().json.body.correlation_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'rejected', error: $('Normalize').first().json.errors.join(',') }) }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-00000000000a",
+      "name": "Respond: rejected",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1540,
+        300
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'rejected', errors: $('Normalize').first().json.errors, correlation_id: $('Receive & claim').first().json.body.correlation_id }) }}",
+        "options": {
+          "responseCode": 422
+        }
+      }
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-00000000000b",
+      "name": "Respond: accepted",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1320,
+        520
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'accepted', correlation_id: $('Receive & claim').first().json.body.correlation_id }) }}",
+        "options": {
+          "responseCode": 202
+        }
+      }
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-00000000000c",
+      "name": "Score",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1540,
+        520
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AI_SERVICE_URL }}/v1/score",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.AI_SERVICE_API_KEY }}"
+            },
+            {
+              "name": "X-Correlation-ID",
+              "value": "={{ $('Receive & claim').first().json.body.correlation_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Normalize').first().json) }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-00000000000d",
+      "name": "Upsert lead in Odoo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1760,
+        520
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AI_SERVICE_URL }}/v1/crm/leads/upsert",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.AI_SERVICE_API_KEY }}"
+            },
+            {
+              "name": "X-Correlation-ID",
+              "value": "={{ $('Receive & claim').first().json.body.correlation_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ correlation_id: $('Receive & claim').first().json.body.correlation_id, event_id: $('Receive & claim').first().json.body.event_id, lead: $('Normalize').first().json, score: $('Score').first().json, exception_status: $('Normalize').first().json.conflicts.length ? 'handoff' : 'none' }) }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-00000000000e",
+      "name": "Mark failed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1980,
+        760
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AI_SERVICE_URL }}/v1/intake/{{ $('Receive & claim').first().json.body.event_id }}/status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.AI_SERVICE_API_KEY }}"
+            },
+            {
+              "name": "X-Correlation-ID",
+              "value": "={{ $('Receive & claim').first().json.body.correlation_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'failed', error: String($json.error?.message || $json.error || 'upsert failed').slice(0, 1900) }) }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-00000000000f",
+      "name": "Fail execution",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        2200,
+        760
+      ],
+      "parameters": {
+        "errorMessage": "={{ 'Lead upsert failed (correlation ' + $('Receive & claim').first().json.body.correlation_id + '): ' + String($('Mark failed').first().json.status ? 'details saved on the intake event' : 'see execution') }}"
+      }
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000010",
+      "name": "Schedule follow-up",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1980,
+        520
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AI_SERVICE_URL }}/v1/crm/leads/{{ $json.lead_id }}/followup",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.AI_SERVICE_API_KEY }}"
+            },
+            {
+              "name": "X-Correlation-ID",
+              "value": "={{ $('Receive & claim').first().json.body.correlation_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ user_id: $json.user_id, priority: $('Score').first().json.priority }) }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000011",
+      "name": "Notify?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        2200,
+        520
+      ],
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 3,
+        "output": "={{ !$('Upsert lead in Odoo').first().json.owner ? 2 : ($('Score').first().json.priority === 'high' && $('Upsert lead in Odoo').first().json.owner.email ? 1 : 0) }}"
+      }
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000012",
+      "name": "Claim notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2420,
+        420
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AI_SERVICE_URL }}/v1/outbound/claim",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.AI_SERVICE_API_KEY }}"
+            },
+            {
+              "name": "X-Correlation-ID",
+              "value": "={{ $('Receive & claim').first().json.body.correlation_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ lead_ref: $('Receive & claim').first().json.body.correlation_id, channel: 'email', template: 'rep_high_priority' }) }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000013",
+      "name": "Send?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        2640,
+        420
+      ],
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $json.send ? 1 : 0 }}"
+      }
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000014",
+      "name": "Compose rep email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2860,
+        340
+      ],
+      "parameters": {
+        "jsCode": "// Internal notification: requirements, score reasons and a link. No customer contact\n// details in the email; the rep opens the lead in Odoo for those.\nconst lead = $('Normalize').first().json;\nconst score = $('Score').first().json;\nconst up = $('Upsert lead in Odoo').first().json;\nconst reqs = [\n  ['Property type', lead.property_type], ['Location', lead.location || lead.location_raw],\n  ['Bedrooms', lead.bedrooms], ['Budget from', lead.budget_min], ['Budget up to', lead.budget_max],\n  ['Currency', lead.currency], ['Timeline (months)', lead.purchase_timeline_months],\n].filter(([, v]) => v !== null && v !== undefined).map(([k, v]) => `  ${k}: ${v}`);\nconst reasons = score.components.map(c => `  ${c.rule}: +${c.points} (${c.reason})`);\nconst text = [\n  `Hi ${up.owner.name},`, '',\n  `A high-priority lead (score ${score.total}) has been assigned to you.`, '',\n  'Requirements:', ...(reqs.length ? reqs : ['  (none provided)']), '',\n  'Why it scored high:', ...reasons, '',\n  `Open the lead: ${up.lead_url}`, '',\n  'A follow-up activity is waiting for you in Odoo.', '-- PropFlow',\n].join('\\n');\nreturn [{ json: {\n  to: up.owner.email,\n  subject: `[PropFlow] High-priority lead #${up.lead_id} (score ${score.total})`,\n  text,\n} }];"
+      }
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000015",
+      "name": "Email rep",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        3080,
+        340
+      ],
+      "parameters": {
+        "fromEmail": "={{ $env.NOTIFY_FROM_EMAIL }}",
+        "toEmail": "={{ $json.to }}",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $json.text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "smtp": {
+          "id": "MailpitSmtpDev01",
+          "name": "Mailpit SMTP (dev)"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000016",
+      "name": "Mark notification sent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        3300,
+        260
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AI_SERVICE_URL }}/v1/outbound/{{ $('Claim notification').first().json.message_id }}/status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.AI_SERVICE_API_KEY }}"
+            },
+            {
+              "name": "X-Correlation-ID",
+              "value": "={{ $('Receive & claim').first().json.body.correlation_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'sent', provider_msg_id: $json.messageId || null }) }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000017",
+      "name": "Mark notification failed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        3300,
+        420
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AI_SERVICE_URL }}/v1/outbound/{{ $('Claim notification').first().json.message_id }}/status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.AI_SERVICE_API_KEY }}"
+            },
+            {
+              "name": "X-Correlation-ID",
+              "value": "={{ $('Receive & claim').first().json.body.correlation_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'failed', error: String($json.error?.message || 'send failed').slice(0, 1900) }) }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000018",
+      "name": "Compose no-owner alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2420,
+        700
+      ],
+      "parameters": {
+        "jsCode": "const up = $('Upsert lead in Odoo').first().json;\nreturn [{ json: {\n  to: $env.ALERT_EMAIL,\n  subject: `[PropFlow] Lead #${up.lead_id} has no owner`,\n  text: [\n    `Lead #${up.lead_id} was created without an owner (warnings: ${up.warnings.join(', ')}).`,\n    'The configured sales team has no active members. Assign the lead in Odoo and check the team.',\n    `Lead: ${up.lead_url}`,\n  ].join('\\n'),\n} }];"
+      }
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000019",
+      "name": "Alert ops: no owner",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2640,
+        700
+      ],
+      "parameters": {
+        "fromEmail": "={{ $env.NOTIFY_FROM_EMAIL }}",
+        "toEmail": "={{ $json.to }}",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $json.text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "smtp": {
+          "id": "MailpitSmtpDev01",
+          "name": "Mailpit SMTP (dev)"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-00000000001a",
+      "name": "Mark completed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        3520,
+        520
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AI_SERVICE_URL }}/v1/intake/{{ $('Receive & claim').first().json.body.event_id }}/status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.AI_SERVICE_API_KEY }}"
+            },
+            {
+              "name": "X-Correlation-ID",
+              "value": "={{ $('Receive & claim').first().json.body.correlation_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'completed', odoo_lead_id: $('Upsert lead in Odoo').first().json.lead_id }) }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare receive request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare receive request": {
+      "main": [
+        [
+          {
+            "node": "Receive & claim",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive & claim": {
+      "main": [
+        [
+          {
+            "node": "Route receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route receipt": {
+      "main": [
+        [
+          {
+            "node": "Respond: refused",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize": {
+      "main": [
+        [
+          {
+            "node": "Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid?": {
+      "main": [
+        [
+          {
+            "node": "Mark rejected",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: accepted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark rejected": {
+      "main": [
+        [
+          {
+            "node": "Respond: rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond: accepted": {
+      "main": [
+        [
+          {
+            "node": "Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score": {
+      "main": [
+        [
+          {
+            "node": "Upsert lead in Odoo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert lead in Odoo": {
+      "main": [
+        [
+          {
+            "node": "Schedule follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark failed": {
+      "main": [
+        [
+          {
+            "node": "Fail execution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule follow-up": {
+      "main": [
+        [
+          {
+            "node": "Notify?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify?": {
+      "main": [
+        [
+          {
+            "node": "Mark completed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Claim notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Compose no-owner alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim notification": {
+      "main": [
+        [
+          {
+            "node": "Send?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send?": {
+      "main": [
+        [
+          {
+            "node": "Mark completed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Compose rep email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose rep email": {
+      "main": [
+        [
+          {
+            "node": "Email rep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email rep": {
+      "main": [
+        [
+          {
+            "node": "Mark notification sent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark notification failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark notification sent": {
+      "main": [
+        [
+          {
+            "node": "Mark completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark notification failed": {
+      "main": [
+        [
+          {
+            "node": "Mark completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose no-owner alert": {
+      "main": [
+        [
+          {
+            "node": "Alert ops: no owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert ops: no owner": {
+      "main": [
+        [
+          {
+            "node": "Mark completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "PropFlowErrorWf1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  }
+}

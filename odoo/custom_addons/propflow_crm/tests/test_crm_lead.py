@@ -59,6 +59,7 @@ class TestPropflowLead(TransactionCase):
         activity = self.env["mail.activity"].browse(first)
         self.assertEqual(activity.user_id, self.rep)
         self.assertEqual(len(lead.activity_ids), 1)
+        self.assertEqual(lead.propflow_next_followup, deadline)
 
     def test_post_note_escapes_html(self):
         lead = self._lead()

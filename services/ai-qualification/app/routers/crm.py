@@ -13,10 +13,23 @@ from app.config import Settings, get_settings
 from app.crm import schedule_followup, upsert_lead
 from app.deps import get_db, get_odoo
 from app.odoo_client import OdooClient, OdooPermanentError, OdooTransientError
-from app.schemas import FollowupOut, FollowupRequest, UpsertOut, UpsertRequest
+from app.schemas import FollowupOut, FollowupRequest, OwnerOut, UpsertOut, UpsertRequest
 
 logger = logging.getLogger("propflow.crm")
 router = APIRouter(prefix="/v1/crm", dependencies=[Depends(require_api_key)])
+
+
+def lead_url(settings: Settings, lead_id: int) -> str:
+    return f"{settings.odoo_public_url.rstrip('/')}/web#id={lead_id}&model=crm.lead&view_type=form"
+
+
+def fetch_owner(odoo: OdooClient, user_id: int | None) -> OwnerOut | None:
+    if not user_id:
+        return None
+    users = odoo.search_read("res.users", [("id", "=", user_id)], ["name", "email"])
+    if not users:
+        return None
+    return OwnerOut(id=user_id, name=users[0]["name"], email=users[0]["email"] or None)
 
 
 def _odoo_failure(exc: Exception) -> HTTPException:
@@ -40,6 +53,7 @@ def upsert(body: UpsertRequest, conn: psycopg.Connection = Depends(get_db),
             score=score, exception_status=body.exception_status,
             configured_team_id=settings.odoo_sales_team_id,
         )
+        owner = fetch_owner(odoo, result.user_id)
     except (OdooTransientError, OdooPermanentError) as exc:
         logger.warning("upsert failed for %s: %s", body.correlation_id, exc)
         raise _odoo_failure(exc) from exc
@@ -59,7 +73,7 @@ def upsert(body: UpsertRequest, conn: psycopg.Connection = Depends(get_db),
                 (body.event_id, score["rules_version"], score["total"],
                  Jsonb(score["components"]), score["priority"]),
             )
-    return UpsertOut(**asdict(result))
+    return UpsertOut(**asdict(result), owner=owner, lead_url=lead_url(settings, result.lead_id))
 
 
 @router.post("/leads/{lead_id}/followup", response_model=FollowupOut)

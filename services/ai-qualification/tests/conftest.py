@@ -9,6 +9,7 @@ from app.main import app
 
 ROOT = Path(__file__).resolve().parents[3]
 TEST_API_KEY = "test-key"
+TEST_WEBHOOK_SECRET = "test-webhook-secret"
 
 
 def load_dataset() -> list[dict]:
@@ -53,7 +54,8 @@ def migrated_db():
 def db_client(migrated_db):
     """API client wired to the test database."""
     app.dependency_overrides[get_settings] = lambda: Settings(
-        database_url=TEST_DATABASE_URL, api_key=TEST_API_KEY, llm_provider="fake"
+        database_url=TEST_DATABASE_URL, api_key=TEST_API_KEY, llm_provider="fake",
+        webhook_hmac_secret=TEST_WEBHOOK_SECRET,
     )
     yield TestClient(app, headers={"X-API-Key": TEST_API_KEY})
     app.dependency_overrides.clear()

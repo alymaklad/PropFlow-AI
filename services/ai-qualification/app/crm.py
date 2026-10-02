@@ -202,6 +202,5 @@ def schedule_followup(odoo: OdooClient, *, lead_id: int, user_id: int, priority:
     activity_id = odoo.execute(
         "crm.lead", "propflow_schedule_activity", [lead_id], FOLLOWUP_SUMMARY, user_id,
         deadline.isoformat(), f"PropFlow {priority}-priority lead: contact the customer.",
-    )
-    odoo.execute("crm.lead", "write", [lead_id], {"propflow_next_followup": deadline.isoformat()})
+    )  # also sets the lead's next follow-up date, in the same transaction
     return activity_id, deadline

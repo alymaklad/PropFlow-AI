@@ -69,10 +69,17 @@ class CrmLead(models.Model):
 
     def propflow_schedule_activity(self, summary, user_id, date_deadline, note=False):
         """Schedule a To-Do for `user_id` unless an open activity with the same summary
-        already exists on the lead (safe to retry). Returns the activity id."""
+        already exists on the lead, and set the lead's next follow-up date. Returns the
+        activity id.
+
+        Safe to retry and to call concurrently: writing the lead first takes its row lock, so a
+        parallel call fails with a serialization error, which Odoo retries automatically; the
+        retry then finds the activity created by the first call."""
         self.ensure_one()
         self.check_access_rights("write")
         self.check_access_rule("write")
+        self.write({"propflow_next_followup": date_deadline})
+        self.flush_recordset(["propflow_next_followup"])
         existing = self.activity_ids.filtered(lambda a: a.summary == summary)
         if existing:
             return existing[0].id

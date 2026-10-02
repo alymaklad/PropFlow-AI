@@ -23,3 +23,4 @@ pgdata/
 .idea/
 .vscode/
 .DS_Store
+.n8n-export/

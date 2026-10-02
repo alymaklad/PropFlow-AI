@@ -35,6 +35,10 @@ class FakeOdoo:
             return [{"id": self.team_id}]
         if model == "crm.team.member":
             return [{"user_id": [uid, f"Rep {uid}"]} for uid in self.members]
+        if model == "res.users":
+            (_, _, uid), = domain
+            return [{"name": f"Rep {uid}", "email": f"rep{uid}@example.com"}] \
+                if uid in self.members else []
         assert model == "crm.lead", model
         found = [lead for lead in self.leads.values() if _matches(lead, domain)
                  and (lead["active"] or (context or {}).get("active_test") is False)]
@@ -60,6 +64,7 @@ class FakeOdoo:
             return len(self.notes)
         if method == "propflow_schedule_activity":
             (lead_id,), summary, user_id, deadline, note = args
+            self.leads[lead_id]["propflow_next_followup"] = deadline
             key = (lead_id, summary)
             self.activities.setdefault(key, {"id": len(self.activities) + 1, "user_id": user_id,
                                              "deadline": deadline})
