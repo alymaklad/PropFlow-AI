@@ -1,6 +1,8 @@
 """Request/response models for the /v1 API."""
 
+from datetime import date
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -76,3 +78,60 @@ class ScoreOut(BaseModel):
     components: list[ScoreComponentOut]
     priority: Literal["high", "standard", "nurture"]
     rules_version: str
+
+
+# --- intake ledger ------------------------------------------------------------------------------
+
+class ClaimRequest(BaseModel):
+    source: Source = "form"
+    raw_payload: dict
+    # Webhook event id if the sender provides one; otherwise derived from the payload.
+    idempotency_key: str | None = Field(default=None, min_length=1, max_length=200)
+
+
+class ClaimOut(BaseModel):
+    event_id: UUID
+    correlation_id: UUID
+    idempotency_key: str
+    duplicate: bool
+    proceed: bool  # false when an earlier delivery already completed or was rejected
+    status: str
+    delivery_count: int
+    odoo_lead_id: int | None
+
+
+class EventStatusRequest(BaseModel):
+    status: Literal["completed", "rejected", "failed"]
+    error: str | None = Field(default=None, max_length=2000)
+    odoo_lead_id: int | None = None
+
+
+# --- CRM ----------------------------------------------------------------------------------------
+
+class UpsertRequest(BaseModel):
+    correlation_id: UUID
+    event_id: UUID | None = None
+    lead: NormalizedLeadOut
+    score: ScoreOut
+    exception_status: Literal["none", "handoff", "sync_error"] = "none"
+
+
+class UpsertOut(BaseModel):
+    lead_id: int
+    action: Literal["created", "updated", "matched_contact"]
+    user_id: int | None
+    team_id: int | None
+    warnings: list[str]
+
+
+class FollowupRequest(BaseModel):
+    user_id: int | None
+    priority: Literal["high", "standard", "nurture"]
+    today: date | None = None  # for tests; defaults to the service's current date
+
+
+class FollowupOut(BaseModel):
+    scheduled: bool
+    activity_id: int | None
+    deadline: date | None
+    warnings: list[str]

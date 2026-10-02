@@ -1,4 +1,5 @@
 from odoo import fields, models
+from odoo.tools import plaintext2html
 
 PROPERTY_TYPES = [
     ("apartment", "Apartment"),
@@ -85,11 +86,11 @@ class CrmLead(models.Model):
         return activity.id
 
     def propflow_post_note(self, body):
-        """Post an internal note. `body` is plain text and is HTML-escaped by Odoo, so
-        customer text cannot inject markup. Returns the message id."""
+        """Post an internal note. `body` is plain text: it is HTML-escaped (so customer text
+        cannot inject markup) and line breaks are kept. Returns the message id."""
         self.ensure_one()
         self.check_access_rights("write")
         self.check_access_rule("write")
-        message = self.message_post(body=body, message_type="comment",
+        message = self.message_post(body=plaintext2html(body), message_type="comment",
                                     subtype_xmlid="mail.mt_note")
         return message.id

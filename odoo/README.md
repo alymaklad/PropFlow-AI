@@ -16,6 +16,7 @@ security group, and two RPC helpers: `propflow_schedule_activity` (idempotent To
 | `make odoo-init` | Creates the database if needed and installs CRM + `propflow_crm` |
 | `make odoo-update` | Applies module code changes to the dev database |
 | `make odoo-test` | Runs the module tests in a separate `propflow_odoo_test` database |
+| `make odoo-seed` | Dev only: creates the "PropFlow Leads" team with three fictional reps and points round-robin (`ODOO_SALES_TEAM_ID`) at it |
 
 The integration group can create, read and update leads and contacts, and read sales teams,
 stages and tags. It cannot delete or archive leads (archiving marks a lead lost, which is a

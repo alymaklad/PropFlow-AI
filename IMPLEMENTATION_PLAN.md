@@ -138,6 +138,18 @@ Goal: a **structured** web-form lead goes from webhook to Odoo, scored and assig
 
 **Exit criteria:** Phase 1 scenarios from §4 pass (valid lead, existing lead, missing fields, duplicate webhook, CRM timeout, partial-success retry). Demo is a form post leading to an Odoo lead with a score explanation.
 
+**Phase 1 status (2026-10-02):**
+
+| Task | Status |
+|---|---|
+| 1.1 `propflow_crm` module | Done: fields, unique constraint, views, least-privilege group, 6 Odoo tests |
+| 1.2 `/normalize` | Done |
+| 1.3 `/score` | Done: matches all 60 labeled scores |
+| 1.4 Odoo client | Done, in the Python service (`/v1/crm`, decision 13): retries, error classes, duplicate-safe upsert; verified live |
+| 1.5 n8n Workflow A | Next |
+| 1.6 Round-robin and follow-up activity | Done: concurrency-safe; verified live with a seeded demo team |
+| 1.7–1.10 | Not started |
+
 ### Phase 2: AI qualification, matching, escalation (≈ 3 weeks)
 
 | # | Task | Size | Done when |

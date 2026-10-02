@@ -6,12 +6,14 @@ import psycopg
 from fastapi import Depends, FastAPI, Request, Response
 
 from app.config import Settings, get_settings
-from app.routers import v1
+from app.routers import crm, intake, v1
 
 logger = logging.getLogger("propflow.ai")
 
 app = FastAPI(title="PropFlow AI Qualification Service", version=get_settings().version)
 app.include_router(v1.router)
+app.include_router(intake.router)
+app.include_router(crm.router)
 
 _CORRELATION_RE = re.compile(r"^[A-Za-z0-9._:-]{1,100}$")
 

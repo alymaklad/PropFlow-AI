@@ -10,7 +10,9 @@ the project owner) or **Proposed** (a default awaiting confirmation).
 - **PropFlow Postgres** owns the event ledger, AI traces, score components, outbound-message
   ledger, consents, escalations, dead letters and the property catalog.
 - **n8n** owns flow, not state. Anything that must survive a retry lives in Postgres or Odoo.
-- **The AI service never writes to Odoo or sends messages.** It returns validated JSON; n8n acts.
+- **AI output never writes to Odoo or sends messages.** The LLM code path returns validated
+  JSON and n8n decides what to do. CRM writes go through the service's deterministic `/v1/crm`
+  endpoints (no LLM involved), which n8n calls with normalized data and a rules-based score.
 
 ## Decisions
 
@@ -28,6 +30,8 @@ the project owner) or **Proposed** (a default awaiting confirmation).
 | 10 | **English only**; other languages go to human review | Accepted | Arabic labels stay in the dataset for later. |
 | 11 | **Round-robin** assignment over active salespeople, pointer in Postgres | Accepted | Atomic pointer update, so concurrent intakes can't take the same slot. |
 | 12 | Escalation is a **handoff to a salesperson**, not an approval queue | Accepted | See below. |
+| 13 | The Odoo client lives in the Python service (`/v1/crm`), not in n8n nodes | Accepted | JSON-RPC errors arrive as HTTP 200 with an error body, and the search-before-create logic needs unit tests. n8n still orchestrates every step. |
+| 14 | A repeat inquiry from a known contact is added to the open lead as a note and only fills its missing fields | Accepted | Never overwrites rep-edited values or downgrades the score. |
 
 ## Stack topology (docker-compose.yml)
 

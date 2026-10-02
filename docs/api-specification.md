@@ -55,6 +55,46 @@ Output: `total` (0–100), `priority` (`high` ≥ 80, `standard` ≥ 50, otherwi
 human-readable `reason`. Rules live in `app/data/scoring_rules.json`. Changing points or
 thresholds requires a new `version`.
 
+## `POST /v1/intake/claim`
+
+Records an inbound event in the ledger exactly once. Body: `source`, `raw_payload` (the
+webhook body) and optionally `idempotency_key` (the sender's event id). Without a key, one is
+derived from a hash of `source` and the canonical payload.
+
+Returns `event_id`, `correlation_id` (carry it through every later call), `duplicate`,
+`delivery_count`, `status`, `odoo_lead_id` and **`proceed`**. `proceed` is false when an
+earlier delivery already completed or was rejected: acknowledge and stop. A redelivery of an
+event that failed or is still processing returns `proceed: true`, and every later step is
+idempotent.
+
+## `POST /v1/intake/{event_id}/status`
+
+Body: `status` (`completed`, `rejected` or `failed`), optional `error`, optional
+`odoo_lead_id`. Returns `404` for an unknown event.
+
+## `POST /v1/crm/leads/upsert`
+
+Body: `correlation_id`, `event_id`, `lead` (a `/v1/normalize` response with `valid: true`),
+`score` (a `/v1/score` response), optional `exception_status` (`none`, `handoff`,
+`sync_error`). Returns `lead_id`, `action`, `user_id`, `team_id` and `warnings`.
+
+| `action` | When | Effect |
+|---|---|---|
+| `created` | No lead with this correlation id or contact | New lead, owner assigned round-robin from the configured team |
+| `updated` | A lead with this correlation id exists (a retry) | Lead fields and score replaced with this request's values |
+| `matched_contact` | An open lead has the same phone or email | New inquiry posted as a note. Only *missing* requirement fields are filled; existing values, score and owner are kept |
+
+Warning `no_salespeople`: the team has no active members, so the lead was created unassigned.
+Errors: `422` if the lead is invalid, `503` if Odoo is unavailable (safe to retry; has
+`Retry-After`), `502` if Odoo rejected the request (do not retry; alert).
+
+## `POST /v1/crm/leads/{lead_id}/followup`
+
+Body: `user_id` (the owner; `null` returns `scheduled: false` with warning `no_owner`) and
+`priority`. Schedules one "PropFlow follow-up" To-Do for the owner (repeat calls return the
+same activity) and sets the lead's next follow-up date. Due date by priority, in business
+days (Sunday to Thursday): high is the same day, standard +1, nurture +3.
+
 ## Health
 
 - `GET /healthz`: liveness (no dependencies checked).

@@ -63,6 +63,7 @@ class TestPropflowLead(TransactionCase):
     def test_post_note_escapes_html(self):
         lead = self._lead()
         message = self.env["mail.message"].browse(
-            lead.propflow_post_note("<script>alert(1)</script> 3 bedrooms"))
+            lead.propflow_post_note("<script>alert(1)</script> 3 bedrooms\nbudget 6M"))
         self.assertNotIn("<script>", message.body)
         self.assertIn("3 bedrooms", message.body)
+        self.assertIn("<br>", message.body)

@@ -2,7 +2,7 @@
 PYTHON ?= python3
 SERVICE := services/ai-qualification
 
-.PHONY: help up down logs ps migrate odoo-init odoo-bootstrap odoo-update odoo-test lint test test-db dataset
+.PHONY: help up down logs ps migrate odoo-init odoo-bootstrap odoo-seed odoo-update odoo-test lint test test-db dataset
 
 help:
 	@grep -E '^[a-z-]+:' Makefile | cut -d: -f1 | sort
@@ -28,6 +28,10 @@ odoo-init:
 # Create/refresh the integration user; rotates its API key into .env
 odoo-bootstrap:
 	scripts/odoo-bootstrap.sh
+
+# Demo sales team with fictional reps for round-robin (dev only)
+odoo-seed:
+	scripts/odoo-seed.sh
 
 # Apply propflow_crm code changes to the dev database
 odoo-update:
