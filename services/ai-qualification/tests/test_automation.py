@@ -311,3 +311,77 @@ def test_route_and_handoff_endpoints(db_client, migrated_db):
     assert body["created"] and body["contact_by"] == "Sunday 4 October at 12:00"
     assert [(m["kind"], m["send"]) for m in body["messages"]] == \
         [("rep", True), ("customer", True)]
+
+
+# --- composite next action ---------------------------------------------------------------------
+
+SCORE = {"total": 90, "priority": "high", "rules_version": "reference-1", "components": [
+    {"rule": "budget_provided", "points": 20, "reason": "budget stated"}]}
+LISTING = {"listing_id": "SZ-VIL-201", "property_type": "villa", "location": "Sheikh Zayed",
+           "price": 14_200_000.0, "currency": "EGP", "bedrooms": 4, "bathrooms": 4,
+           "delivery_status": "ready", "amenities": [], "description": "Villa.",
+           "verified_days_ago": 2}
+
+
+def _next(conn, odoo, *, match, qualification=None, score=SCORE, owner=True, lead_kw=None):
+    from app.automation import next_action
+    event = _event(conn)
+    lead_id = odoo._create({"name": "x", "team_id": 1, "user_id": 10 if owner else False})
+    upsert = {"lead_id": lead_id, "user_id": 10 if owner else None, "team_id": 1,
+              "owner": {"id": 10, "name": "Rep 10", "email": "rep10@example.com"}
+              if owner else None}
+    return lead_id, next_action(
+        conn, odoo, CAL, event_id=event[0], correlation_id=event[1], lead=lead(**(lead_kw or {})),
+        qualification=qualification or {"opt_out": False, "reasons": []}, score=score,
+        upsert=upsert, match=match, public_url=URL, now=SUNDAY_10)
+
+
+@needs_db
+def test_next_action_shortlist(migrated_db):
+    odoo = FakeOdoo()
+    lead_id, out = _next(migrated_db, odoo, match={"status": "matched", "matches": [LISTING],
+                                                   "missing": []})
+    assert out["route"] == "shortlist"
+    customer, rep = out["messages"]
+    assert customer["kind"] == "customer" and "SZ-VIL-201" in customer["text"]
+    assert rep["kind"] == "rep" and "matching listings were emailed" in rep["text"]
+    assert odoo.activities[(lead_id, "PropFlow follow-up")]["user_id"] == 10
+    assert migrated_db.execute("SELECT status FROM followup_sequences").fetchone() == ("active",)
+
+
+@needs_db
+def test_next_action_clarify_standard_priority(migrated_db):
+    odoo = FakeOdoo()
+    _, out = _next(migrated_db, odoo, score={**SCORE, "priority": "standard", "total": 60},
+                   match={"status": "insufficient_criteria", "matches": [],
+                          "missing": ["location"]}, lead_kw={"location": None})
+    assert out["route"] == "clarify"
+    (customer,) = out["messages"]  # no rep email below high priority
+    assert "Which area" in customer["text"]
+
+
+@needs_db
+def test_next_action_handoff(migrated_db):
+    odoo = FakeOdoo()
+    lead_id, out = _next(migrated_db, odoo, match={"status": "none", "matches": [],
+                                                   "missing": []})
+    assert (out["route"], out["reasons"]) == ("handoff", ["no_matching_property"])
+    assert [m["kind"] for m in out["messages"]] == ["rep", "customer"]
+    assert odoo.leads[lead_id]["propflow_automation"] == "paused"
+    assert (lead_id, "PropFlow follow-up") not in odoo.activities  # only the handoff activity
+
+
+@needs_db
+def test_next_action_without_owner_alerts(migrated_db):
+    _, out = _next(migrated_db, FakeOdoo(), owner=False,
+                   match={"status": "matched", "matches": [LISTING], "missing": []})
+    assert out["messages"][-1]["reason"] == "no_owner"
+
+
+@needs_db
+def test_next_action_rep_only_without_customer_email(migrated_db):
+    _, out = _next(migrated_db, FakeOdoo(), lead_kw={"email": None},
+                   match={"status": "matched", "matches": [LISTING], "missing": []})
+    assert out["route"] == "rep_only"
+    assert [m["kind"] for m in out["messages"]] == ["rep"]
+    assert migrated_db.execute("SELECT count(*) FROM followup_sequences").fetchone() == (0,)

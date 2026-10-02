@@ -13,7 +13,7 @@ import psycopg
 from psycopg.types.json import Jsonb
 
 from app.business_time import BusinessCalendar
-from app.crm import _m2o_id, fetch_owner, lead_url, team_manager
+from app.crm import _m2o_id, fetch_owner, lead_url, schedule_followup, team_manager
 from app.messages import next_steps, reason_text
 from app.odoo_client import OdooClient
 from app.routers.outbound import prepare
@@ -287,3 +287,78 @@ def due_followups(conn: psycopg.Connection, odoo: OdooClient, cal: BusinessCalen
              None if done else cal.add_days(now, NEXT_REMINDER_AFTER_DAYS), seq_id))
         messages.append({"kind": "customer", **out.model_dump()})
     return {"messages": messages, "stopped": stopped}
+
+
+
+# --- composite next action (one call from the intake workflow) ----------------------------------
+
+ACTION_TEXT = {
+    "shortlist": "matching listings were emailed to the customer",
+    "clarify": "the customer was asked for the missing details",
+    "rep_only": "no customer email on file: please contact them",
+}
+
+
+def next_action(conn: psycopg.Connection, odoo: OdooClient, cal: BusinessCalendar, *,
+                event_id: UUID, correlation_id: UUID, lead: dict, qualification: dict | None,
+                score: dict, upsert: dict, match: dict, public_url: str,
+                now: datetime) -> dict:
+    """Decide and carry out the next step after the lead is in Odoo. Returns the route, its
+    reasons and the messages to send (already consent-checked and claimed)."""
+    route, reasons = decide_route(qualification, lead, match["status"],
+                                  has_email=bool(lead.get("email")))
+    lead_id, owner = upsert["lead_id"], upsert.get("owner")
+    url = lead_url(public_url, lead_id)
+    messages: list[dict] = []
+
+    if route == "handoff":
+        result = create_handoff(
+            conn, odoo, cal, event_id=event_id, correlation_id=correlation_id, lead_id=lead_id,
+            user_id=upsert.get("user_id"), team_id=upsert.get("team_id"),
+            priority=score["priority"], reasons=reasons, lead=lead,
+            matches=match.get("matches", []), public_url=public_url, now=now)
+        messages += handoff_messages(conn, result, lead_id=lead_id, reasons=reasons, lead=lead)
+        if not result.owner:
+            messages.append({"kind": "manager", "send": False, "reason": "no_owner",
+                             "lead_id": lead_id, "lead_url": url})
+        return {"route": route, "reasons": reasons, "messages": messages,
+                "due_at": result.due_at.isoformat()}
+
+    if route == "opt_out":  # normally handled before the upsert; kept safe here too
+        return {"route": route, "reasons": [], "messages": []}
+
+    if upsert.get("user_id"):
+        schedule_followup(odoo, lead_id=lead_id, user_id=upsert["user_id"],
+                          priority=score["priority"], today=cal.local(now).date())
+    advisor = owner["name"] if owner else "our sales team"
+    if route in ("shortlist", "clarify"):
+        template, data = (
+            ("customer_shortlist", {"name": lead.get("name"), "requirements": lead,
+                                    "matches": match["matches"], "advisor_name": advisor})
+            if route == "shortlist" else
+            ("customer_clarification", {"name": lead.get("name"),
+                                        "missing": match.get("missing", [])}))
+        out = prepare(conn, lead_ref=str(correlation_id), to_email=lead.get("email"),
+                      contact_keys=[k for k in (lead.get("phone"),) if k], template=template,
+                      sequence_no=1, data=data)
+        messages.append({"kind": "customer", **out.model_dump()})
+        if out.reason != "opted_out":
+            start_sequence(conn, cal, lead_id=lead_id, correlation_id=correlation_id,
+                           to_email=lead["email"],
+                           contact_keys=[k for k in (lead.get("phone"),) if k],
+                           name=lead.get("name"),
+                           requirements={k: lead.get(k) for k in (
+                               "property_type", "location", "bedrooms", "budget_min",
+                               "budget_max", "currency")},
+                           now=now)
+    if score["priority"] == "high" and owner and owner.get("email"):
+        out = prepare(conn, lead_ref=str(correlation_id), to_email=owner["email"],
+                      contact_keys=[], template="internal_high_priority", sequence_no=1,
+                      check_consent=False,
+                      data={"owner_name": owner["name"], "lead_id": lead_id, "score": score,
+                            "action": ACTION_TEXT[route], "lead_url": url})
+        messages.append({"kind": "rep", **out.model_dump()})
+    if not owner:
+        messages.append({"kind": "manager", "send": False, "reason": "no_owner",
+                         "lead_id": lead_id, "lead_url": url})
+    return {"route": route, "reasons": reasons, "messages": messages, "due_at": None}

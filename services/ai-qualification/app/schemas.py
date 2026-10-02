@@ -336,3 +336,22 @@ class FollowupStartRequest(BaseModel):
 class FollowupDueOut(BaseModel):
     messages: list[MessageOut]
     stopped: list[dict]
+
+
+
+class NextActionRequest(BaseModel):
+    event_id: UUID
+    correlation_id: UUID
+    lead: NormalizedLeadOut          # the merged lead from /v1/qualify (or /v1/normalize)
+    qualification: dict | None = None
+    score: ScoreOut
+    upsert: UpsertOut
+    match: MatchOut
+    now: datetime | None = None
+
+
+class NextActionOut(BaseModel):
+    route: Literal["opt_out", "handoff", "shortlist", "clarify", "rep_only"]
+    reasons: list[str]
+    messages: list[MessageOut]
+    due_at: datetime | None

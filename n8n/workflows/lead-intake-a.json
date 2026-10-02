@@ -61,7 +61,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json) }}",
         "options": {
-          "timeout": 20000,
+          "timeout": 30000,
           "response": {
             "response": {
               "fullResponse": true,
@@ -153,7 +153,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($('Receive & claim').first().json.body.payload) }}",
         "options": {
-          "timeout": 20000
+          "timeout": 30000
         }
       },
       "retryOnFail": true,
@@ -205,7 +205,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ status: 'rejected', error: $('Normalize').first().json.errors.join(',') }) }}",
         "options": {
-          "timeout": 20000
+          "timeout": 30000
         }
       },
       "retryOnFail": true,
@@ -248,12 +248,101 @@
     },
     {
       "id": "5f0f0000-0000-4000-8000-00000000000c",
-      "name": "Score",
+      "name": "Qualify",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
         1540,
         520
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AI_SERVICE_URL }}/v1/qualify",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.AI_SERVICE_API_KEY }}"
+            },
+            {
+              "name": "X-Correlation-ID",
+              "value": "={{ $('Receive & claim').first().json.body.correlation_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ correlation_id: $('Receive & claim').first().json.body.correlation_id, event_id: $('Receive & claim').first().json.body.event_id, lead: $('Normalize').first().json }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-00000000000d",
+      "name": "Opted out?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1760,
+        520
+      ],
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $json.opt_out ? 1 : 0 }}"
+      }
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-00000000000e",
+      "name": "Record opt-out",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1980,
+        360
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AI_SERVICE_URL }}/v1/consents",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.AI_SERVICE_API_KEY }}"
+            },
+            {
+              "name": "X-Correlation-ID",
+              "value": "={{ $('Receive & claim').first().json.body.correlation_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contact_keys: [$('Qualify').first().json.lead.email, $('Qualify').first().json.lead.phone].filter(Boolean), status: 'opted_out', source: 'inquiry' }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-00000000000f",
+      "name": "Score",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1980,
+        600
       ],
       "parameters": {
         "method": "POST",
@@ -274,9 +363,9 @@
         "sendBody": true,
         "contentType": "json",
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify($('Normalize').first().json) }}",
+        "jsonBody": "={{ JSON.stringify($('Qualify').first().json.lead) }}",
         "options": {
-          "timeout": 20000
+          "timeout": 30000
         }
       },
       "retryOnFail": true,
@@ -284,13 +373,13 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "5f0f0000-0000-4000-8000-00000000000d",
+      "id": "5f0f0000-0000-4000-8000-000000000010",
       "name": "Upsert lead in Odoo",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
-        1760,
-        520
+        2200,
+        600
       ],
       "parameters": {
         "method": "POST",
@@ -311,9 +400,9 @@
         "sendBody": true,
         "contentType": "json",
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ correlation_id: $('Receive & claim').first().json.body.correlation_id, event_id: $('Receive & claim').first().json.body.event_id, lead: $('Normalize').first().json, score: $('Score').first().json, exception_status: $('Normalize').first().json.conflicts.length ? 'handoff' : 'none' }) }}",
+        "jsonBody": "={{ JSON.stringify({ correlation_id: $('Receive & claim').first().json.body.correlation_id, event_id: $('Receive & claim').first().json.body.event_id, lead: $('Qualify').first().json.lead, score: $('Score').first().json }) }}",
         "options": {
-          "timeout": 20000
+          "timeout": 30000
         }
       },
       "retryOnFail": true,
@@ -322,13 +411,13 @@
       "onError": "continueErrorOutput"
     },
     {
-      "id": "5f0f0000-0000-4000-8000-00000000000e",
+      "id": "5f0f0000-0000-4000-8000-000000000011",
       "name": "Mark failed",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
-        1980,
-        760
+        2420,
+        820
       ],
       "parameters": {
         "method": "POST",
@@ -351,7 +440,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ status: 'failed', error: String($json.error?.message || $json.error || 'upsert failed').slice(0, 1900) }) }}",
         "options": {
-          "timeout": 20000
+          "timeout": 30000
         }
       },
       "retryOnFail": true,
@@ -359,283 +448,99 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "5f0f0000-0000-4000-8000-00000000000f",
+      "id": "5f0f0000-0000-4000-8000-000000000012",
       "name": "Fail execution",
       "type": "n8n-nodes-base.stopAndError",
       "typeVersion": 1,
       "position": [
-        2200,
-        760
+        2640,
+        820
       ],
       "parameters": {
-        "errorMessage": "={{ 'Lead upsert failed (correlation ' + $('Receive & claim').first().json.body.correlation_id + '): ' + String($('Mark failed').first().json.status ? 'details saved on the intake event' : 'see execution') }}"
+        "errorMessage": "={{ 'Lead upsert failed (correlation ' + $('Receive & claim').first().json.body.correlation_id + '): details saved on the intake event' }}"
       }
-    },
-    {
-      "id": "5f0f0000-0000-4000-8000-000000000010",
-      "name": "Schedule follow-up",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
-      "position": [
-        1980,
-        520
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $env.AI_SERVICE_URL }}/v1/crm/leads/{{ $json.lead_id }}/followup",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "X-API-Key",
-              "value": "={{ $env.AI_SERVICE_API_KEY }}"
-            },
-            {
-              "name": "X-Correlation-ID",
-              "value": "={{ $('Receive & claim').first().json.body.correlation_id }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "json",
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ user_id: $json.user_id, priority: $('Score').first().json.priority }) }}",
-        "options": {
-          "timeout": 20000
-        }
-      },
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 3000
-    },
-    {
-      "id": "5f0f0000-0000-4000-8000-000000000011",
-      "name": "Notify?",
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3.4,
-      "position": [
-        2200,
-        520
-      ],
-      "parameters": {
-        "mode": "expression",
-        "numberOutputs": 3,
-        "output": "={{ !$('Upsert lead in Odoo').first().json.owner ? 2 : ($('Score').first().json.priority === 'high' && $('Upsert lead in Odoo').first().json.owner.email ? 1 : 0) }}"
-      }
-    },
-    {
-      "id": "5f0f0000-0000-4000-8000-000000000012",
-      "name": "Claim notification",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
-      "position": [
-        2420,
-        420
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $env.AI_SERVICE_URL }}/v1/outbound/claim",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "X-API-Key",
-              "value": "={{ $env.AI_SERVICE_API_KEY }}"
-            },
-            {
-              "name": "X-Correlation-ID",
-              "value": "={{ $('Receive & claim').first().json.body.correlation_id }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "json",
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ lead_ref: $('Receive & claim').first().json.body.correlation_id, channel: 'email', template: 'rep_high_priority' }) }}",
-        "options": {
-          "timeout": 20000
-        }
-      },
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 3000
     },
     {
       "id": "5f0f0000-0000-4000-8000-000000000013",
-      "name": "Send?",
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3.4,
+      "name": "Match properties",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
       "position": [
-        2640,
-        420
+        2420,
+        600
       ],
       "parameters": {
-        "mode": "expression",
-        "numberOutputs": 2,
-        "output": "={{ $json.send ? 1 : 0 }}"
-      }
+        "method": "POST",
+        "url": "={{ $env.AI_SERVICE_URL }}/v1/match",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.AI_SERVICE_API_KEY }}"
+            },
+            {
+              "name": "X-Correlation-ID",
+              "value": "={{ $('Receive & claim').first().json.body.correlation_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ correlation_id: $('Receive & claim').first().json.body.correlation_id, event_id: $('Receive & claim').first().json.body.event_id, lead: $('Qualify').first().json.lead }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
     },
     {
       "id": "5f0f0000-0000-4000-8000-000000000014",
-      "name": "Compose rep email",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2860,
-        340
-      ],
-      "parameters": {
-        "jsCode": "// Internal notification: requirements, score reasons and a link. No customer contact\n// details in the email; the rep opens the lead in Odoo for those.\nconst lead = $('Normalize').first().json;\nconst score = $('Score').first().json;\nconst up = $('Upsert lead in Odoo').first().json;\nconst reqs = [\n  ['Property type', lead.property_type], ['Location', lead.location || lead.location_raw],\n  ['Bedrooms', lead.bedrooms], ['Budget from', lead.budget_min], ['Budget up to', lead.budget_max],\n  ['Currency', lead.currency], ['Timeline (months)', lead.purchase_timeline_months],\n].filter(([, v]) => v !== null && v !== undefined).map(([k, v]) => `  ${k}: ${v}`);\nconst reasons = score.components.map(c => `  ${c.rule}: +${c.points} (${c.reason})`);\nconst text = [\n  `Hi ${up.owner.name},`, '',\n  `A high-priority lead (score ${score.total}) has been assigned to you.`, '',\n  'Requirements:', ...(reqs.length ? reqs : ['  (none provided)']), '',\n  'Why it scored high:', ...reasons, '',\n  `Open the lead: ${up.lead_url}`, '',\n  'A follow-up activity is waiting for you in Odoo.', '-- PropFlow',\n].join('\\n');\nreturn [{ json: {\n  to: up.owner.email,\n  subject: `[PropFlow] High-priority lead #${up.lead_id} (score ${score.total})`,\n  text,\n} }];"
-      }
-    },
-    {
-      "id": "5f0f0000-0000-4000-8000-000000000015",
-      "name": "Email rep",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
-      "position": [
-        3080,
-        340
-      ],
-      "parameters": {
-        "fromEmail": "={{ $env.NOTIFY_FROM_EMAIL }}",
-        "toEmail": "={{ $json.to }}",
-        "subject": "={{ $json.subject }}",
-        "emailFormat": "text",
-        "text": "={{ $json.text }}",
-        "options": {
-          "appendAttribution": false
-        }
-      },
-      "credentials": {
-        "smtp": {
-          "id": "MailpitSmtpDev01",
-          "name": "Mailpit SMTP (dev)"
-        }
-      },
-      "onError": "continueErrorOutput"
-    },
-    {
-      "id": "5f0f0000-0000-4000-8000-000000000016",
-      "name": "Mark notification sent",
+      "name": "Next action",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
-      "position": [
-        3300,
-        260
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $env.AI_SERVICE_URL }}/v1/outbound/{{ $('Claim notification').first().json.message_id }}/status",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "X-API-Key",
-              "value": "={{ $env.AI_SERVICE_API_KEY }}"
-            },
-            {
-              "name": "X-Correlation-ID",
-              "value": "={{ $('Receive & claim').first().json.body.correlation_id }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "json",
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ status: 'sent', provider_msg_id: $json.messageId || null }) }}",
-        "options": {
-          "timeout": 20000
-        }
-      },
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 3000
-    },
-    {
-      "id": "5f0f0000-0000-4000-8000-000000000017",
-      "name": "Mark notification failed",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
-      "position": [
-        3300,
-        420
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $env.AI_SERVICE_URL }}/v1/outbound/{{ $('Claim notification').first().json.message_id }}/status",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "X-API-Key",
-              "value": "={{ $env.AI_SERVICE_API_KEY }}"
-            },
-            {
-              "name": "X-Correlation-ID",
-              "value": "={{ $('Receive & claim').first().json.body.correlation_id }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "json",
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ status: 'failed', error: String($json.error?.message || 'send failed').slice(0, 1900) }) }}",
-        "options": {
-          "timeout": 20000
-        }
-      },
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 3000
-    },
-    {
-      "id": "5f0f0000-0000-4000-8000-000000000018",
-      "name": "Compose no-owner alert",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2420,
-        700
-      ],
-      "parameters": {
-        "jsCode": "const up = $('Upsert lead in Odoo').first().json;\nreturn [{ json: {\n  to: $env.ALERT_EMAIL,\n  subject: `[PropFlow] Lead #${up.lead_id} has no owner`,\n  text: [\n    `Lead #${up.lead_id} was created without an owner (warnings: ${up.warnings.join(', ')}).`,\n    'The configured sales team has no active members. Assign the lead in Odoo and check the team.',\n    `Lead: ${up.lead_url}`,\n  ].join('\\n'),\n} }];"
-      }
-    },
-    {
-      "id": "5f0f0000-0000-4000-8000-000000000019",
-      "name": "Alert ops: no owner",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
       "position": [
         2640,
-        700
+        600
       ],
       "parameters": {
-        "fromEmail": "={{ $env.NOTIFY_FROM_EMAIL }}",
-        "toEmail": "={{ $json.to }}",
-        "subject": "={{ $json.subject }}",
-        "emailFormat": "text",
-        "text": "={{ $json.text }}",
+        "method": "POST",
+        "url": "={{ $env.AI_SERVICE_URL }}/v1/actions/next",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.AI_SERVICE_API_KEY }}"
+            },
+            {
+              "name": "X-Correlation-ID",
+              "value": "={{ $('Receive & claim').first().json.body.correlation_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ event_id: $('Receive & claim').first().json.body.event_id, correlation_id: $('Receive & claim').first().json.body.correlation_id, lead: $('Qualify').first().json.lead, qualification: $('Qualify').first().json, score: $('Score').first().json, upsert: $('Upsert lead in Odoo').first().json, match: $('Match properties').first().json }) }}",
         "options": {
-          "appendAttribution": false
+          "timeout": 30000
         }
       },
-      "credentials": {
-        "smtp": {
-          "id": "MailpitSmtpDev01",
-          "name": "Mailpit SMTP (dev)"
-        }
-      },
-      "onError": "continueRegularOutput"
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
     },
     {
-      "id": "5f0f0000-0000-4000-8000-00000000001a",
+      "id": "5f0f0000-0000-4000-8000-000000000028",
       "name": "Mark completed",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
-        3520,
+        3980,
         520
       ],
       "parameters": {
@@ -657,9 +562,161 @@
         "sendBody": true,
         "contentType": "json",
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ status: 'completed', odoo_lead_id: $('Upsert lead in Odoo').first().json.lead_id }) }}",
+        "jsonBody": "={{ JSON.stringify({ status: 'completed', odoo_lead_id: $('Upsert lead in Odoo').isExecuted ? $('Upsert lead in Odoo').first().json.lead_id : null }) }}",
         "options": {
-          "timeout": 20000
+          "timeout": 30000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "executeOnce": true
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000015",
+      "name": "Split messages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2860,
+        600
+      ],
+      "parameters": {
+        "jsCode": "// One item per email to send. Entries that could not reach their intended recipient (no\n// owner, no manager) become ops alerts. Everything else (opted out, already sent) is skipped.\nconst messages = $('Next action').first().json.messages;\nconst items = [];\nfor (const m of messages) {\n  if (m.send) {\n    items.push({ json: { to: m.to, subject: m.subject, text: m.text, message_id: m.message_id, kind: m.kind } });\n  } else if (['no_owner', 'no_manager'].includes(m.reason)) {\n    const who = m.reason === 'no_owner' ? 'a salesperson' : 'a sales manager';\n    items.push({ json: {\n      to: $env.ALERT_EMAIL, message_id: null, kind: 'ops',\n      subject: `[PropFlow] Lead #${m.lead_id} needs attention`,\n      text: `PropFlow could not reach ${who} for lead #${m.lead_id}. Assign it in Odoo:\\n${m.lead_url}`,\n    } });\n  }\n}\nreturn items.length ? items : [{ json: { none: true } }];"
+      }
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000016",
+      "name": "Anything to send?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        3080,
+        600
+      ],
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $json.none ? 0 : 1 }}"
+      }
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000017",
+      "name": "Send email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        3300,
+        700
+      ],
+      "onError": "continueErrorOutput",
+      "parameters": {
+        "fromEmail": "={{ $env.NOTIFY_FROM_EMAIL }}",
+        "toEmail": "={{ $json.to }}",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $json.text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "smtp": {
+          "id": "MailpitSmtpDev01",
+          "name": "Mailpit SMTP (dev)"
+        }
+      }
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000018",
+      "name": "Ledgered (sent)?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        3520,
+        600
+      ],
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $('Split messages').item.json.message_id ? 1 : 0 }}"
+      }
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-000000000019",
+      "name": "Ledgered (failed)?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        3520,
+        820
+      ],
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $('Split messages').item.json.message_id ? 1 : 0 }}"
+      }
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-00000000001a",
+      "name": "Mark sent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        3740,
+        560
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AI_SERVICE_URL }}/v1/outbound/{{ $('Split messages').item.json.message_id }}/status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.AI_SERVICE_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'sent', provider_msg_id: $json.messageId || null }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "5f0f0000-0000-4000-8000-00000000001b",
+      "name": "Mark failed send",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        3740,
+        860
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AI_SERVICE_URL }}/v1/outbound/{{ $('Split messages').item.json.message_id }}/status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.AI_SERVICE_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'failed', error: String($json.error?.message || 'send failed').slice(0, 1900) }) }}",
+        "options": {
+          "timeout": 30000
         }
       },
       "retryOnFail": true,
@@ -770,7 +827,47 @@
       "main": [
         [
           {
+            "node": "Qualify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qualify": {
+      "main": [
+        [
+          {
+            "node": "Opted out?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Opted out?": {
+      "main": [
+        [
+          {
             "node": "Score",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record opt-out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record opt-out": {
+      "main": [
+        [
+          {
+            "node": "Mark completed",
             "type": "main",
             "index": 0
           }
@@ -792,7 +889,7 @@
       "main": [
         [
           {
-            "node": "Schedule follow-up",
+            "node": "Match properties",
             "type": "main",
             "index": 0
           }
@@ -817,54 +914,40 @@
         ]
       ]
     },
-    "Schedule follow-up": {
+    "Match properties": {
       "main": [
         [
           {
-            "node": "Notify?",
+            "node": "Next action",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Notify?": {
+    "Next action": {
       "main": [
         [
           {
-            "node": "Mark completed",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Claim notification",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Compose no-owner alert",
+            "node": "Split messages",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Claim notification": {
+    "Split messages": {
       "main": [
         [
           {
-            "node": "Send?",
+            "node": "Anything to send?",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Send?": {
+    "Anything to send?": {
       "main": [
         [
           {
@@ -875,43 +958,68 @@
         ],
         [
           {
-            "node": "Compose rep email",
+            "node": "Send email",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Compose rep email": {
+    "Send email": {
       "main": [
         [
           {
-            "node": "Email rep",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Email rep": {
-      "main": [
-        [
-          {
-            "node": "Mark notification sent",
+            "node": "Ledgered (sent)?",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Mark notification failed",
+            "node": "Ledgered (failed)?",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Mark notification sent": {
+    "Ledgered (sent)?": {
+      "main": [
+        [
+          {
+            "node": "Mark completed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ledgered (failed)?": {
+      "main": [
+        [
+          {
+            "node": "Mark completed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark failed send",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark sent": {
       "main": [
         [
           {
@@ -922,29 +1030,7 @@
         ]
       ]
     },
-    "Mark notification failed": {
-      "main": [
-        [
-          {
-            "node": "Mark completed",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Compose no-owner alert": {
-      "main": [
-        [
-          {
-            "node": "Alert ops: no owner",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Alert ops: no owner": {
+    "Mark failed send": {
       "main": [
         [
           {

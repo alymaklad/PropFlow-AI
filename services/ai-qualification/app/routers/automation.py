@@ -14,6 +14,7 @@ from app.automation import (
     decide_route,
     due_followups,
     handoff_messages,
+    next_action,
     start_sequence,
 )
 from app.business_time import BusinessCalendar
@@ -27,6 +28,8 @@ from app.schemas import (
     HandoffCheckOut,
     HandoffOut,
     HandoffRequest,
+    NextActionOut,
+    NextActionRequest,
     RouteOut,
     RouteRequest,
 )
@@ -95,3 +98,18 @@ def followups_due(body: ClockRequest, conn: psycopg.Connection = Depends(get_db)
                   odoo: OdooClient = Depends(get_odoo),
                   cal: BusinessCalendar = Depends(get_calendar)) -> FollowupDueOut:
     return FollowupDueOut(**due_followups(conn, odoo, cal, now=_now(body.now)))
+
+
+@router.post("/actions/next", response_model=NextActionOut)
+def actions_next(body: NextActionRequest, conn: psycopg.Connection = Depends(get_db),
+                 odoo: OdooClient = Depends(get_odoo), settings: Settings = Depends(get_settings),
+                 cal: BusinessCalendar = Depends(get_calendar)) -> NextActionOut:
+    """One call after the upsert and match: route, then hand off or message the customer,
+    schedule the rep's follow-up, start reminders and notify the rep for high priority."""
+    result = next_action(
+        conn, odoo, cal, event_id=body.event_id, correlation_id=body.correlation_id,
+        lead=body.lead.model_dump(), qualification=body.qualification,
+        score=body.score.model_dump(), upsert=body.upsert.model_dump(),
+        match=body.match.model_dump(), public_url=settings.odoo_public_url,
+        now=_now(body.now))
+    return NextActionOut(**result)

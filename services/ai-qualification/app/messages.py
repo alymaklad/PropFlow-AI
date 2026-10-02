@@ -197,3 +197,19 @@ TEMPLATES.update({
     "internal_handoff_overdue": (_internal_overdue, ("manager_name", "owner_name", "lead_id",
                                                      "reasons", "contact_by", "lead_url")),
 })
+
+
+
+def _internal_high_priority(d: dict) -> tuple[str, str]:
+    lines = [f"Hi {first_name(d['owner_name'])},", "",
+             f"A high-priority lead (score {d['score']['total']}) has been assigned to you.", "",
+             "Why it scored high:",
+             *[f"  {c['rule']}: +{c['points']} ({c['reason']})" for c in d["score"]["components"]],
+             "", f"Next step taken: {d['action']}.", f"Open the lead: {d['lead_url']}", "",
+             "A follow-up activity is waiting for you in Odoo.", "-- PropFlow"]
+    return (f"[PropFlow] High-priority lead #{d['lead_id']} (score {d['score']['total']})",
+            "\n".join(lines))
+
+
+TEMPLATES["internal_high_priority"] = (
+    _internal_high_priority, ("owner_name", "lead_id", "score", "action", "lead_url"))

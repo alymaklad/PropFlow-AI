@@ -5,7 +5,8 @@ The files in this folder are the source of truth. The n8n UI is at http://localh
 | File | Workflow | Trigger |
 |---|---|---|
 | `workflows/lead-intake-a.json` | **PropFlow - Lead intake (A)** | `POST /webhook/propflow/intake` |
-| `workflows/error-handler.json` | **PropFlow - Error handler** | Any failed run of the intake workflow |
+| `workflows/scheduler.json` | **PropFlow - Scheduler (handoffs, follow-ups)** | Every 15 minutes |
+| `workflows/error-handler.json` | **PropFlow - Error handler** | Any failed run of the other workflows |
 | `credentials/mailpit-smtp.json` | Mailpit SMTP (dev) | No secret: Mailpit needs no login |
 
 ```bash
@@ -28,29 +29,34 @@ python3 scripts/send_lead.py --file lead.json --event-id evt-123
 
 ## Lead intake (A)
 
-The workflow orchestrates; validation, scoring and CRM logic live in the AI service, where
-they are unit-tested.
+The workflow orchestrates; validation, AI, scoring, matching and CRM logic live in the AI
+service, where they are unit-tested.
 
-1. **Prepare receive request**: passes the exact raw body and the signature headers on.
-2. **Receive & claim** (`/v1/intake/receive`): verifies the signature, parses the body,
-   records the event once. Responses: bad signature `401` (not stored); signed but not a JSON
-   object `422` (stored as rejected); already completed `200 duplicate`.
-3. **Normalize**: an invalid lead (no contact or no content) is marked rejected and gets `422`.
-   A valid lead gets `202 accepted` straight away; the rest runs after the response.
-4. **Score**, then **Upsert lead in Odoo** (retried 3 times). Conflicting input sets the
-   lead's exception status to `handoff`. If the upsert still fails, the event is marked
-   `failed` and the run fails on purpose so the error handler records it.
-5. **Schedule follow-up** for the owner.
-6. **Notify?**: high priority with an owner: the rep email is claimed in the outbound ledger
-   first, so it is sent at most once even when the event is delivered several times. No
-   owner: ops gets an alert.
-7. **Mark completed**.
+1. **Prepare receive request** / **Receive & claim** (`/v1/intake/receive`): signature check,
+   parse, record the event once. Bad signature `401` (not stored); signed but not a JSON object
+   `422` (stored as rejected); already completed `200 duplicate`.
+2. **Normalize**: an invalid lead gets `422`; a valid one gets `202 accepted` straight away and
+   the rest runs after the response.
+3. **Qualify** (`/v1/qualify`): AI extraction merged under the form fields. An opt-out records
+   consent and stops here (no lead, no messages).
+4. **Score**, **Upsert lead in Odoo** (retried; on failure the event is marked `failed` and the
+   run fails so the error handler records it), **Match properties**.
+5. **Next action** (`/v1/actions/next`): hand off to the salesperson, or email a shortlist or a
+   clarification question, schedule the rep's follow-up, start reminders, and notify the rep
+   of high-priority leads. It returns the emails to send, already consent-checked and claimed.
+6. **Send** each email, mark it sent or failed in the ledger. Entries without a recipient
+   (no owner, no manager) become ops alerts. Then **Mark completed** (once).
 
-A redelivery of a failed or still-running event is processed again; every step is idempotent
-(one lead, one follow-up activity, one rep email; verified with 6 simultaneous deliveries).
+A redelivery of a failed or still-running event is processed again; every step is idempotent.
+n8n rejects bodies that are not valid JSON (`422`) before the workflow runs, so those are not
+stored.
 
-Note: n8n's webhook rejects bodies that are not valid JSON (`422 Failed to parse request body`)
-before the workflow runs, so those are refused but not stored in the ledger.
+## Scheduler
+
+**PropFlow - Scheduler** runs every 15 minutes: `/v1/handoffs/check` (resolve handoffs whose
+activity is done, remind the rep after the deadline, then the manager) and `/v1/followups/due`
+(customer reminders), then the same send-and-mark steps. Messages only go out during business
+hours (Sunday to Thursday, 09:00-17:00 Cairo by default).
 
 ## Error handler
 

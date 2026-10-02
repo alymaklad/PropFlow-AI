@@ -92,6 +92,57 @@ row in `qualifications`), `lead` (a `/v1/normalize` response). Always `200`; ret
 
 With `LLM_PROVIDER=none` (no Groq key) every message gets `fallback` and goes to a salesperson.
 
+## `POST /v1/match`
+
+Body: `correlation_id`, optional `event_id`, `lead`. Returns `status` (`matched`, `none`,
+`insufficient_criteria` with `missing`, `conflict`) and up to 5 `matches`. Only listings that
+are `available` and verified within 14 days are returned; price may be up to 5% above the
+stated maximum; currency must match. Each call is recorded in `match_results`.
+
+## `POST /v1/actions/next`
+
+The intake workflow's single post-upsert call. Body: `event_id`, `correlation_id`, `lead`
+(merged), `qualification`, `score`, `upsert`, `match`, optional `now`. Returns `route`,
+`reasons`, `messages` and `due_at` (handoffs only).
+
+| Route | When | What happens |
+|---|---|---|
+| `handoff` | Any qualification reason, conflicting requirements, or no matching property | `/v1/handoffs` (below) |
+| `shortlist` | Listings matched and the customer has an email | Shortlist email, rep follow-up activity, reminders |
+| `clarify` | No location or budget | Clarification email, rep follow-up activity, reminders |
+| `rep_only` | No customer email | Rep follow-up activity only |
+
+If the AI failed but the form already has a location and a budget, the lead continues
+automatically instead of being handed off. High-priority leads also email the owner.
+
+`messages` items: `kind` (`rep`, `customer`, `manager`), `send`, `message_id`, `to`, `subject`,
+`text`, `reason` when not sendable (`opted_out`, `already_sent`, `pending`, `no_email`,
+`no_owner`, `no_manager`). Send only `send: true` items, then report on
+`/v1/outbound/{message_id}/status`.
+
+## Handoffs and follow-ups
+
+- `POST /v1/route`: the routing decision alone (no side effects).
+- `POST /v1/handoffs`: pause automation on the lead, set a contact deadline (high priority: 2
+  business hours, otherwise next business day), create the owner's "PropFlow handoff" activity
+  (or the team manager's if there is no owner), post a context note, stop reminders. Returns
+  the rep notification and one customer acknowledgement. Idempotent per event.
+- `POST /v1/handoffs/check`: resolve handoffs whose activity is done; after the deadline remind
+  the owner once, then notify the team manager (or return `no_manager`).
+- `POST /v1/followups/start` / `POST /v1/followups/due`: customer reminders (first after 2
+  business days, then 3, at most 2), stopped by opt-out, paused automation, handoff, conversion
+  to an opportunity, a won or closed lead.
+
+All accept an optional `now` (ISO datetime) for tests and replays. Messages are only produced
+during business hours (`BUSINESS_TZ`, `BUSINESS_HOURS`, `BUSINESS_DAYS`).
+
+## `POST /v1/messages/prepare` and `POST /v1/consents`
+
+`prepare` is the single path for customer messages: consent check (email address or phone),
+render a fixed template (`customer_shortlist`, `customer_clarification`, `customer_handoff_ack`,
+`customer_reminder`), claim it in the outbound ledger. `consents` records `opted_in` /
+`opted_out` for every key of a contact; an opt-out also stops active reminders.
+
 ## `POST /v1/intake/claim`
 
 Records an inbound event in the ledger exactly once. Body: `source`, `raw_payload` (the

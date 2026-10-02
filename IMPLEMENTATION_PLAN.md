@@ -180,7 +180,10 @@ Goal: a **structured** web-form lead goes from webhook to Odoo, scored and assig
 | 2.4 Deterministic fallback | Done: provider down or output invalid hands off; form fields still flow |
 | 2.5 AI trace | Done: `qualifications` row per call (migration 0003) |
 | 2.6 Evaluation harness | Done (`make eval`); **real-model results pending a Groq key** |
-| 2.7–2.10 | In progress |
+| 2.7 Property catalog | Done: 37 synthetic listings, freshness and availability filters |
+| 2.8 Match outcomes | Done: matched, none (handoff), insufficient criteria (clarify), conflict (handoff) |
+| 2.9 Handoff | Done: deadline, activity, context note, rep and customer emails, reminder then manager; verified live including resolution |
+| 2.10 Follow-ups | Done: business-hours reminders with stop conditions; scheduler workflow every 15 minutes. Customer-reply detection waits for email intake (3.1) |
 
 ### Phase 3: Channels, compliance, reporting, resilience (≈ 2–3 weeks)
 

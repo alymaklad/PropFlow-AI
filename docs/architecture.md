@@ -36,6 +36,9 @@ the project owner) or **Proposed** (a default awaiting confirmation).
 | 16 | Outbound messages are at most once | Accepted | Claimed in `outbound_messages` before sending; a crash mid-send leaves it `pending` and visible, never resent automatically. |
 | 18 | AI qualification never blocks or decides alone: provider failure, invalid output, low confidence, injection signals or a non-English inquiry all hand the lead to a salesperson | Accepted | With no Groq key (`LLM_PROVIDER=none`), every free-text lead is handed off. |
 | 19 | Customer-entered form fields win over AI extraction | Accepted | The model only fills gaps. |
+| 20 | After the upsert, one composite call (`/v1/actions/next`) decides and performs the next step | Accepted | Keeps branching logic tested in Python; n8n shows the pipeline step by step. |
+| 21 | If the AI fails but the form has a location and a budget, the lead continues automatically | Accepted | Deterministic fallback; only leads that need understanding are handed off. |
+| 22 | Reminders stop on opt-out, paused automation, handoff, conversion to an opportunity, or a won or closed lead | Accepted | Detecting customer replies needs email intake (Phase 3). Until then a rep pauses automation or converts the lead. |
 | 17 | The intake webhook answers `202` once the lead is validated; scoring and CRM work continue after the response | Accepted | Form submitters are not kept waiting on Odoo. Failures after `202` go to the error handler and dead-letter queue. |
 
 ## Stack topology (docker-compose.yml)

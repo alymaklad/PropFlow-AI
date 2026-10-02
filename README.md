@@ -16,6 +16,9 @@ cp .env.example .env        # then replace every change-me value
 make up                     # build and start the stack
 make odoo-init              # one-time: create the Odoo database and install CRM
 make odoo-bootstrap         # integration user + API key (written into .env)
+make odoo-seed              # dev: demo sales team (fictional reps + manager)
+make seed-properties        # dev: synthetic property catalog
+make n8n-import             # load and publish the n8n workflows
 ```
 
 Details and a manual fallback: [odoo/README.md](odoo/README.md). If you just installed Docker and
