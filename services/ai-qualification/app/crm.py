@@ -29,9 +29,9 @@ from app.odoo_client import OdooClient, OdooDuplicateError
 LEAD_FIELDS = ["id", "user_id", "team_id", "propflow_correlation_id"]
 REQUIREMENT_FIELDS = ["propflow_property_type", "propflow_location", "propflow_bedrooms",
                       "propflow_budget_min", "propflow_budget_max", "propflow_currency",
-                      "propflow_timeline_months"]
+                      "propflow_timeline_months", "propflow_delivery_pref"]
 REQUIREMENT_KEYS = ("property_type", "location", "bedrooms", "budget_min", "budget_max",
-                    "currency", "purchase_timeline_months")
+                    "currency", "purchase_timeline_months", "delivery_preference")
 FOLLOWUP_SUMMARY = "PropFlow follow-up"
 # Business days until the follow-up is due, by priority (0 = today).
 FOLLOWUP_BUSINESS_DAYS = {"high": 0, "standard": 1, "nurture": 3}
@@ -74,6 +74,7 @@ def requirement_values(lead: dict, *, only_present: bool) -> dict:
         "propflow_budget_max": lead.get("budget_max"),
         "propflow_currency": lead.get("currency"),
         "propflow_timeline_months": lead.get("purchase_timeline_months"),
+        "propflow_delivery_pref": lead.get("delivery_preference"),
     }
     if only_present:
         return {k: v for k, v in values.items() if v is not None}

@@ -34,6 +34,8 @@ the project owner) or **Proposed** (a default awaiting confirmation).
 | 14 | A repeat inquiry from a known contact is added to the open lead as a note and only fills its missing fields | Accepted | Never overwrites rep-edited values or downgrades the score. |
 | 15 | Webhook HMAC signatures are verified in the service (`/v1/intake/receive`), not in n8n | Accepted | n8n's Code node blocks `crypto`; the service check is unit-tested. Unsigned requests are not stored. |
 | 16 | Outbound messages are at most once | Accepted | Claimed in `outbound_messages` before sending; a crash mid-send leaves it `pending` and visible, never resent automatically. |
+| 18 | AI qualification never blocks or decides alone: provider failure, invalid output, low confidence, injection signals or a non-English inquiry all hand the lead to a salesperson | Accepted | With no Groq key (`LLM_PROVIDER=none`), every free-text lead is handed off. |
+| 19 | Customer-entered form fields win over AI extraction | Accepted | The model only fills gaps. |
 | 17 | The intake webhook answers `202` once the lead is validated; scoring and CRM work continue after the response | Accepted | Form submitters are not kept waiting on Odoo. Failures after `202` go to the error handler and dead-letter queue. |
 
 ## Stack topology (docker-compose.yml)

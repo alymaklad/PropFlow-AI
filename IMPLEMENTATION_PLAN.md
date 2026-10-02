@@ -170,6 +170,18 @@ Goal: a **structured** web-form lead goes from webhook to Odoo, scored and assig
 
 **Exit criteria:** every escalation trigger in description §6G is exercised by a scenario. A free-text inquiry like the New Cairo example produces the expected JSON and a verified shortlist or a safe alternative. Extraction accuracy is measured on the dataset and reported honestly.
 
+**Phase 2 status:**
+
+| Task | Status |
+|---|---|
+| 2.1 LLM client | Done: Groq (strict JSON schema, 429/5xx retries), scripted fake for tests; `LLM_PROVIDER=none` turns AI off |
+| 2.2 LangGraph `/qualify` | Done: sanitize, extract, validate, one repair, read-only lookups, review gate |
+| 2.3 Prompt-injection handling | Done: delimited input, no model tools, deterministic pattern backup, adversarial dataset cases |
+| 2.4 Deterministic fallback | Done: provider down or output invalid hands off; form fields still flow |
+| 2.5 AI trace | Done: `qualifications` row per call (migration 0003) |
+| 2.6 Evaluation harness | Done (`make eval`); **real-model results pending a Groq key** |
+| 2.7–2.10 | In progress |
+
 ### Phase 3: Channels, compliance, reporting, resilience (≈ 2–3 weeks)
 
 | # | Task | Size | Done when |

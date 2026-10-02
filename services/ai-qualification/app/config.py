@@ -16,6 +16,11 @@ class Settings:
     odoo_public_url: str = "http://localhost:8069"
     webhook_hmac_secret: str | None = None
     webhook_max_skew_seconds: int = 300
+    groq_api_key: str | None = None
+    groq_model: str = "openai/gpt-oss-120b"
+    groq_strict: bool = True
+    groq_reasoning_effort: str | None = None
+    qualify_min_confidence: float = 0.6
     version: str = "0.1.0"
 
 
@@ -32,6 +37,11 @@ def load_settings() -> Settings:
         odoo_sales_team_id=int(team) if team else None,
         odoo_public_url=os.environ.get("ODOO_PUBLIC_URL") or "http://localhost:8069",
         webhook_hmac_secret=os.environ.get("WEBHOOK_HMAC_SECRET") or None,
+        groq_api_key=os.environ.get("GROQ_API_KEY") or None,
+        groq_model=os.environ.get("GROQ_MODEL") or "openai/gpt-oss-120b",
+        groq_strict=os.environ.get("GROQ_STRICT", "true").lower() != "false",
+        groq_reasoning_effort=os.environ.get("GROQ_REASONING_EFFORT") or None,
+        qualify_min_confidence=float(os.environ.get("QUALIFY_MIN_CONFIDENCE") or 0.6),
     )
 
 

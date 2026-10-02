@@ -30,6 +30,7 @@ class IntakePayload(BaseModel):
     currency: str | None = Field(default=None, max_length=3)
     timeline: int | str | None = None
     purchase_stage: str | None = Field(default=None, max_length=50)
+    delivery_preference: str | None = Field(default=None, max_length=50)
 
 
 class NormalizedLeadOut(BaseModel):
@@ -48,6 +49,7 @@ class NormalizedLeadOut(BaseModel):
     budget_max: int | None
     currency: str | None
     purchase_timeline_months: int | None
+    delivery_preference: Literal["ready", "under_construction", "off_plan", "any"] | None = None
     purchase_intent: Intent
     errors: list[str]
     warnings: list[str]
@@ -189,3 +191,25 @@ class DeadLetterRequest(BaseModel):
 
 class DeadLetterOut(BaseModel):
     id: UUID
+
+
+
+# --- AI qualification ---------------------------------------------------------------------------
+
+class QualifyRequest(BaseModel):
+    correlation_id: UUID
+    event_id: UUID | None = None
+    lead: NormalizedLeadOut
+
+
+class QualifyOut(BaseModel):
+    status: Literal["valid", "repaired", "invalid", "fallback", "skipped", "unsupported_language"]
+    needs_human_review: bool
+    reasons: list[str]
+    opt_out: bool
+    requests_human: bool
+    confidence: float | None
+    model: str | None
+    prompt_version: str
+    extraction: dict | None
+    lead: NormalizedLeadOut  # form fields merged with the extraction (form values win)

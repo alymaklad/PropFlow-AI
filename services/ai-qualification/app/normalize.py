@@ -30,6 +30,10 @@ TIMELINE_CHOICES = {
     "6_12_months": 12,
     "over_12_months": 18,
 }
+DELIVERY_CHOICES = {
+    "ready": "ready", "ready_to_move": "ready", "immediate": "ready",
+    "under_construction": "under_construction", "off_plan": "off_plan", "any": "any",
+}
 PURCHASE_STAGE_CHOICES = {
     "ready_to_buy": "high", "comparing_options": "medium", "just_browsing": "low",
 }
@@ -243,6 +247,7 @@ class NormalizedLead:
     budget_max: int | None = None
     currency: str | None = None
     purchase_timeline_months: int | None = None
+    delivery_preference: str | None = None
     purchase_intent: str = "unknown"
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
@@ -325,6 +330,11 @@ def normalize_lead(payload: dict) -> NormalizedLead:
     lead.purchase_timeline_months = normalize_timeline(raw_timeline)
     if raw_timeline not in (None, "") and lead.purchase_timeline_months is None:
         warnings.append("timeline_invalid")
+
+    delivery = (payload.get("delivery_preference") or "").strip().lower().replace(" ", "_")
+    lead.delivery_preference = DELIVERY_CHOICES.get(delivery)
+    if delivery and not lead.delivery_preference:
+        warnings.append("delivery_preference_invalid")
 
     stage = (payload.get("purchase_stage") or "").strip().lower()
     lead.purchase_intent = PURCHASE_STAGE_CHOICES.get(stage, "unknown")

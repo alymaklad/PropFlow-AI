@@ -2,7 +2,7 @@
 PYTHON ?= python3
 SERVICE := services/ai-qualification
 
-.PHONY: help up down logs ps migrate odoo-init odoo-bootstrap odoo-seed odoo-update odoo-test n8n-import n8n-export lint test test-db dataset
+.PHONY: help up down logs ps migrate odoo-init odoo-bootstrap odoo-seed odoo-update odoo-test n8n-import n8n-export eval lint test test-db dataset
 
 help:
 	@grep -E '^[a-z-]+:' Makefile | cut -d: -f1 | sort
@@ -48,6 +48,10 @@ n8n-import:
 # Save workflows edited in the n8n UI back to n8n/workflows/
 n8n-export:
 	scripts/n8n-export.sh
+
+# Extraction evaluation against Groq (needs GROQ_API_KEY); report in docs/eval/
+eval:
+	scripts/eval.sh
 
 lint:
 	ruff check .

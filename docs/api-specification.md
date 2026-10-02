@@ -76,6 +76,22 @@ claims the event (as `/claim` below), returning the claim fields plus `payload`.
 `401`: missing or invalid signature (not stored). `422`: signed but not a JSON object (stored
 as `rejected` with error `malformed_json`). `503`: no webhook secret configured.
 
+## `POST /v1/qualify`
+
+AI qualification of the free-text message (LangGraph: sanitize, extract, validate, one repair,
+read-only lookups, review gate). Body: `correlation_id`, optional `event_id` (enables the trace
+row in `qualifications`), `lead` (a `/v1/normalize` response). Always `200`; returns data only.
+
+| Field | Meaning |
+|---|---|
+| `status` | `valid`, `repaired` (second attempt), `invalid` (still invalid after repair), `fallback` (provider unavailable or AI off), `skipped` (no message), `unsupported_language` (Arabic script: no model call) |
+| `needs_human_review` / `reasons` | Hand the lead to a salesperson when any reason is present: `injection_suspected`, `conflicting_requirements`, `customer_requested_human`, `unsupported_language`, `out_of_scope_rental`, `low_confidence`, `ai_unavailable`, `ai_output_invalid` |
+| `opt_out` | The customer asked to stop contact (keyword detection backs up the model) |
+| `extraction` | Validated model output, or `null` |
+| `lead` | The input lead with gaps filled from the extraction. Form values always win; an extraction from an unsupported language is not used. Feed this to `/v1/score` |
+
+With `LLM_PROVIDER=none` (no Groq key) every message gets `fallback` and goes to a salesperson.
+
 ## `POST /v1/intake/claim`
 
 Records an inbound event in the ledger exactly once. Body: `source`, `raw_payload` (the
