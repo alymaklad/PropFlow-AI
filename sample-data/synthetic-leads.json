@@ -1,5 +1,5 @@
 {
-  "dataset_version": "1.0",
+  "dataset_version": "1.2",
   "scoring_rules_version": "reference-1",
   "supported_languages": [
     "en"
@@ -1080,7 +1080,8 @@
       "source": "form",
       "language": "en",
       "tags": [
-        "missing_budget"
+        "missing_budget",
+        "type_missing"
       ],
       "duplicate_of": null,
       "redelivery_of": null,
@@ -1094,7 +1095,7 @@
           "phone": "+201000000016"
         },
         "extraction": {
-          "property_type": "apartment",
+          "property_type": null,
           "location": "Maadi",
           "bedrooms": 2,
           "budget_min": null,
@@ -1110,7 +1111,7 @@
           "skip_fields": []
         },
         "score": {
-          "total": 20,
+          "total": 0,
           "components": [
             {
               "rule": "budget_provided",
@@ -1124,8 +1125,8 @@
             },
             {
               "rule": "requirements_complete",
-              "points": 20,
-              "reason": "type, location and size present"
+              "points": 0,
+              "reason": "type, location or size missing"
             },
             {
               "rule": "explicit_high_intent",
@@ -2376,7 +2377,8 @@
       "language": "en",
       "tags": [
         "duplicate_contact",
-        "phone_format_variant"
+        "phone_format_variant",
+        "type_missing"
       ],
       "duplicate_of": "L003",
       "redelivery_of": null,
@@ -2390,7 +2392,7 @@
           "phone": "+201000000003"
         },
         "extraction": {
-          "property_type": "apartment",
+          "property_type": null,
           "location": "Sheikh Zayed",
           "bedrooms": 3,
           "budget_min": null,
@@ -2406,7 +2408,7 @@
           "skip_fields": []
         },
         "score": {
-          "total": 40,
+          "total": 20,
           "components": [
             {
               "rule": "budget_provided",
@@ -2420,8 +2422,8 @@
             },
             {
               "rule": "requirements_complete",
-              "points": 20,
-              "reason": "type, location and size present"
+              "points": 0,
+              "reason": "type, location or size missing"
             },
             {
               "rule": "explicit_high_intent",
@@ -2655,7 +2657,8 @@
       "source": "form",
       "language": "en",
       "tags": [
-        "injection"
+        "injection",
+        "type_missing"
       ],
       "duplicate_of": null,
       "redelivery_of": null,
@@ -2671,7 +2674,7 @@
           "email": "lead038@example.com"
         },
         "extraction": {
-          "property_type": "apartment",
+          "property_type": null,
           "location": "Maadi",
           "bedrooms": 2,
           "budget_min": null,
@@ -2687,7 +2690,7 @@
           "skip_fields": []
         },
         "score": {
-          "total": 40,
+          "total": 20,
           "components": [
             {
               "rule": "budget_provided",
@@ -2701,8 +2704,8 @@
             },
             {
               "rule": "requirements_complete",
-              "points": 20,
-              "reason": "type, location and size present"
+              "points": 0,
+              "reason": "type, location or size missing"
             },
             {
               "rule": "explicit_high_intent",
@@ -2718,7 +2721,7 @@
           "priority": "nurture"
         }
       },
-      "notes": "Score must come from rules (40), never 100."
+      "notes": "Score must come from rules (20), never 100."
     },
     {
       "id": "L039",
@@ -2962,7 +2965,7 @@
           "currency": "EGP",
           "delivery_preference": null,
           "purchase_timeline_months": null,
-          "purchase_intent": "unknown",
+          "purchase_intent": "medium",
           "requests_human": false,
           "opt_out": false,
           "needs_human_review": true,
@@ -3034,7 +3037,7 @@
           "currency": null,
           "delivery_preference": null,
           "purchase_timeline_months": 1,
-          "purchase_intent": "unknown",
+          "purchase_intent": "medium",
           "requests_human": false,
           "opt_out": false,
           "needs_human_review": true,
@@ -3108,7 +3111,7 @@
           "currency": null,
           "delivery_preference": null,
           "purchase_timeline_months": null,
-          "purchase_intent": "unknown",
+          "purchase_intent": "medium",
           "requests_human": false,
           "opt_out": false,
           "needs_human_review": true,

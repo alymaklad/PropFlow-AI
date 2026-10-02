@@ -43,7 +43,8 @@ still stop all sends.
 - **Location:** canonical names (`New Cairo`; "Fifth Settlement" and "Tagamoa" map to it). Neighbourhoods roll up to the city (Smouha gives `Alexandria`).
 - **Bedrooms:** a studio is `0`. `null` for land, commercial and office, and when not stated.
 - **Timeline:** whole months, rounded up (6 weeks gives 2). Relative dates that depend on today's date ("before September") are not labeled and are listed in `skip_fields`.
-- **Intent:** `high` only for an explicit, near-term commitment ("ready to book", "urgent", "deciding this week"). `low` for explicit browsing or no hurry. `unknown` when there is no signal.
+- **Intent:** `high` only for an explicit commitment to buy soon ("ready to book", "urgent", "deciding this week"); asking for a call is not one. `low` for explicit browsing, no hurry, or information-only requests (a brochure). `medium` when requirements or buying interest are stated without either signal, including terse requirement lists and requests for a person that say what they want. `unknown` when no buying interest is expressed (greetings, opt-outs, rentals).
+- **Property type:** only when stated. "A 3 bedroom in Maadi" does not say apartment, so `property_type` is null.
 - **`skip_fields`:** fields that are genuinely ambiguous. The evaluation harness must not count them.
 - **`needs_human_review`:** true for injection attempts, conflicting or invalid requirements, requests for a person, and out-of-scope requests (rentals), and unsupported languages.
 
@@ -62,6 +63,17 @@ Computed at intake, so the follow-up reply component is always 0 here.
 Priority: 80 and above is `high`, 50 to 79 is `standard`, below 50 is `nurture`. The intake maximum is therefore 90.
 
 These rules are configurable examples from the project description, not validated benchmarks.
+
+## Changelog
+
+- **1.1** (2026-10-02, after the first real-model evaluation): corrected five labels that
+  contradicted the conventions above. L016, L034 and L038 had `property_type: apartment` for
+  messages that never state a type (now null, matching L060; their expected scores drop by 20).
+  L042 and L043 state requirements, so `purchase_intent` is `medium`, not `unknown`. Intent
+  conventions were written out more precisely. No label was changed to match a model output
+  that the conventions do not support.
+- **1.2** (same day, after the second run): L044 also states requirements, so its intent is
+  `medium`; it belongs to the same correction as L042 and L043 and was missed in 1.1.
 
 ## Not yet labeled
 

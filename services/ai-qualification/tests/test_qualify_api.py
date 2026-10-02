@@ -36,7 +36,7 @@ def test_qualify_merges_and_records_trace(db_client, migrated_db):
     row = migrated_db.execute(
         "SELECT validation_status, model, prompt_version, needs_human_review, attempts"
         " FROM qualifications").fetchone()
-    assert row == ("valid", "fake", "qualify-v1", False, 1)
+    assert row == ("valid", "fake", "qualify-v2", False, 1)
 
 
 @needs_db

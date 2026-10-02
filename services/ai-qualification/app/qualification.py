@@ -31,7 +31,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from app.llm import LLMBadOutput, LLMClient, LLMUnavailable
 from app.normalize import normalize_location
 
-PROMPT_VERSION = "qualify-v1"
+PROMPT_VERSION = "qualify-v2"
 SYSTEM_PROMPT = (Path(__file__).parent / "prompts" / f"{PROMPT_VERSION}.md").read_text(
     encoding="utf-8")
 SCHEMA_NAME = "lead_qualification"
@@ -190,6 +190,8 @@ def post_check(ext: ModelExtraction) -> tuple[dict, list[str], list[str]]:
     for key in ("budget_min", "budget_max"):
         if data[key] is not None:
             data[key] = int(round(data[key])) if data[key] > 0 else None
+    if data["budget_min"] is not None and data["budget_min"] == data["budget_max"]:
+        data["budget_min"] = None  # one figure: maximum only (labeling convention)
     if (data["budget_min"] is not None and data["budget_max"] is not None
             and data["budget_min"] > data["budget_max"]):
         conflicts.append("budget_min_gt_max")

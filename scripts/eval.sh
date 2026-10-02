@@ -9,7 +9,8 @@ set -a; source .env; set +a
   exit 2
 }
 out="docs/eval/$(echo "${GROQ_MODEL:-model}" | tr '/:' '--')-$(date +%Y%m%d-%H%M).json"
-docker compose exec -T ai-service python -m app.evaluate --delay "${EVAL_DELAY:-2.5}" "$@" \
+# Groq free tier: 8,000 tokens/minute and ~2,000 tokens per qualification, so pace at ~15 s.
+docker compose exec -T ai-service python -m app.evaluate --delay "${EVAL_DELAY:-15}" "$@" \
   < sample-data/synthetic-leads.json > "$out"
 cp "$out" docs/eval/latest.json
 python3 - "$out" <<'PY'

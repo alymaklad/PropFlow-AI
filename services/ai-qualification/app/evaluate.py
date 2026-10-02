@@ -39,6 +39,7 @@ def evaluate(records: list[dict], llm: LLMClient, *, min_confidence: float = 0.6
     statuses: dict[str, int] = {}
     latencies: list[float] = []
     mismatches: list[dict] = []
+    decision_mismatches: list[dict] = []
 
     for i, record in enumerate(records):
         if i and delay:
@@ -56,6 +57,12 @@ def evaluate(records: list[dict], llm: LLMClient, *, min_confidence: float = 0.6
             bucket = review if name == "review" else opt_out
             key = ("t" if predicted == actual else "f") + ("p" if predicted else "n")
             bucket[key] += 1
+        if (result.needs_human_review != labels["needs_human_review"]
+                or result.opt_out != labels["opt_out"]):
+            decision_mismatches.append({
+                "id": record["id"], "expected_review": labels["needs_human_review"],
+                "got_review": result.needs_human_review, "reasons": result.reasons,
+                "expected_opt_out": labels["opt_out"], "got_opt_out": result.opt_out})
         if labels["injection_attempt"]:
             injection_total += 1
             injection_hits += "injection_suspected" in result.reasons
@@ -105,6 +112,7 @@ def evaluate(records: list[dict], llm: LLMClient, *, min_confidence: float = 0.6
             "p90": round(latencies[int(len(latencies) * 0.9)], 3) if latencies else None,
         },
         "mismatches": mismatches,
+        "decision_mismatches": decision_mismatches,
     }
 
 
