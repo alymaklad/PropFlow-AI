@@ -243,3 +243,32 @@ class MatchOut(BaseModel):
     matches: list[ListingOut]
     missing: list[str]
     criteria: dict
+
+
+
+# --- customer messages and consent --------------------------------------------------------------
+
+class PrepareRequest(BaseModel):
+    lead_ref: str = Field(min_length=1, max_length=200)
+    to_email: str | None = Field(default=None, max_length=320)
+    contact_keys: list[str] = Field(default_factory=list, max_length=5)
+    template: str = Field(min_length=1, max_length=100)
+    sequence_no: int = Field(default=1, ge=1)
+    data: dict = Field(default_factory=dict)
+
+
+class PrepareOut(BaseModel):
+    send: bool
+    message_id: UUID | None = None
+    reason: str | None = None  # why not: no_email, opted_out, already_sent, pending, ...
+    to: str | None = None
+    subject: str | None = None
+    text: str | None = None
+    template_version: str | None = None
+
+
+class ConsentRequest(BaseModel):
+    contact_keys: list[str] = Field(min_length=1, max_length=5)
+    channel: Literal["email", "whatsapp"] = "email"
+    status: Literal["opted_in", "opted_out"]
+    source: str = Field(min_length=1, max_length=100)

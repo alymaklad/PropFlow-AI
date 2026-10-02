@@ -13,3 +13,5 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.Header", "fastapi.Query"]
 [lint.per-file-ignores]
 # `env` is injected by `odoo shell`
 "odoo/bootstrap/*.py" = ["F821"]
+# one listing per line reads better than wrapped tuples
+"database/seeds/build_properties.py" = ["E501"]
