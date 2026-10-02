@@ -5,6 +5,7 @@ property matching, Odoo CRM sync, follow-up, human escalation and reporting.
 
 - Scope: [PropFlow_AI_Project_Description.md](PropFlow_AI_Project_Description.md)
 - Plan: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)
+- Deployment (free): [docs/deployment-plan.md](docs/deployment-plan.md)
 - Decisions: [docs/architecture.md](docs/architecture.md)
 
 ## Quick start (development)
