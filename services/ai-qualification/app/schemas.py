@@ -213,3 +213,33 @@ class QualifyOut(BaseModel):
     prompt_version: str
     extraction: dict | None
     lead: NormalizedLeadOut  # form fields merged with the extraction (form values win)
+
+
+
+# --- property matching --------------------------------------------------------------------------
+
+class MatchRequest(BaseModel):
+    correlation_id: UUID
+    event_id: UUID | None = None
+    lead: NormalizedLeadOut
+
+
+class ListingOut(BaseModel):
+    listing_id: str
+    property_type: str
+    location: str
+    price: float
+    currency: str
+    bedrooms: int | None
+    bathrooms: int | None
+    delivery_status: str
+    amenities: list[str]
+    description: str | None
+    verified_days_ago: int
+
+
+class MatchOut(BaseModel):
+    status: Literal["matched", "none", "insufficient_criteria", "conflict"]
+    matches: list[ListingOut]
+    missing: list[str]
+    criteria: dict

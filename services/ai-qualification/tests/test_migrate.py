@@ -37,7 +37,7 @@ def tables(url: str) -> set[str]:
 
 def test_applies_to_empty_database(db_url):
     applied = migrate(db_url, REAL_MIGRATIONS)
-    assert applied == ["0001", "0002", "0003"]
+    assert applied == ["0001", "0002", "0003", "0004"]
     assert {
         "intake_events", "qualifications", "score_results", "properties",
         "outbound_messages", "consents", "escalations", "dead_letters", "schema_migrations",

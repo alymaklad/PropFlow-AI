@@ -2,7 +2,7 @@
 PYTHON ?= python3
 SERVICE := services/ai-qualification
 
-.PHONY: help up down logs ps migrate odoo-init odoo-bootstrap odoo-seed odoo-update odoo-test n8n-import n8n-export eval lint test test-db dataset
+.PHONY: help up down logs ps migrate odoo-init odoo-bootstrap odoo-seed odoo-update odoo-test n8n-import n8n-export eval lint test test-db seed-properties dataset
 
 help:
 	@grep -E '^[a-z-]+:' Makefile | cut -d: -f1 | sort
@@ -64,6 +64,10 @@ test:
 test-db:
 	@test -n "$(TEST_DATABASE_URL)" || (echo "set TEST_DATABASE_URL"; exit 2)
 	TEST_DATABASE_URL=$(TEST_DATABASE_URL) $(PYTHON) -m pytest $(SERVICE) tests/data
+
+# Load the synthetic property catalog (dev only; safe to re-run)
+seed-properties:
+	docker compose exec -T propflow-db sh -c 'psql -q -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"' < database/seeds/properties.sql
 
 dataset:
 	$(PYTHON) sample-data/build_synthetic_leads.py
