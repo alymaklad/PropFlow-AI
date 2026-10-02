@@ -43,8 +43,10 @@ Cost Management > Credits. That is enough for an application period, not for a p
    then choose the 64-bit (x86) Ubuntu image instead). 1 GB types are too small.
 5. **Key pair**: Create new key pair, name `propflow-aws`, type **ED25519**, format **.pem**.
    Save it as `~/.ssh/propflow-aws.pem` and run `chmod 400 ~/.ssh/propflow-aws.pem`.
-6. **Network settings**: allow SSH from **My IP**; tick **Allow HTTPS traffic from the
-   internet** and **Allow HTTP traffic from the internet**.
+6. **Network settings**: allow SSH from **Anywhere** (GitHub Actions deploys over SSH from
+   changing addresses; the server accepts keys only and runs fail2ban); tick **Allow HTTPS
+   traffic from the internet** and **Allow HTTP traffic from the internet** (Caddy redirects
+   HTTP to HTTPS and renews certificates over it).
 7. **Storage**: **30 GiB gp3**.
 8. **Launch instance**.
 9. **EC2 > Elastic IPs > Allocate Elastic IP address**, then **Actions > Associate** it with
