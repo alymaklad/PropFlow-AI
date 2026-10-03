@@ -14,9 +14,11 @@ one.
 |---|---|
 | Buyer site | <https://propflow-demo.duckdns.org>: browse verified listings and send an inquiry |
 | Staff dashboard | <https://propflow-demo.duckdns.org/staff>: handoffs, reports, failed runs with replay (token on request) |
-| Captured emails | <https://propflow-demo.duckdns.org/mail/>: every email the system "sent" (password on request) |
+| Mail viewer | <https://propflow-demo.duckdns.org/mail/>: every email the system sent, including staff notifications (password on request) |
 
-All homes, people and data are fictional. Emails are captured, never delivered. The AI runs on
+All homes, people and data are fictional. Send an inquiry with your own email address and the
+reply arrives in your inbox (one email, no reminders); emails to the fictional staff are only
+captured in the mail viewer. The AI runs on
 a free tier, so under heavy use some inquiries are handed to a salesperson instead of being
 qualified automatically (by design). A 10-minute walkthrough is in [docs/demo.md](docs/demo.md).
 

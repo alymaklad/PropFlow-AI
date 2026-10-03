@@ -11,7 +11,7 @@ What reviewers will get:
 |---|---|---|
 | `https://<name>.duckdns.org` | Buyer site | Public |
 | `https://<name>.duckdns.org/staff` | Staff dashboard | Staff token you share |
-| `https://<name>.duckdns.org/mail/` | Every email the system "sent" (captured, never delivered) | User `reviewer` + a password you share |
+| `https://<name>.duckdns.org/mail/` | Every email the system sent (captured; optionally also delivered, section 8b) | User `reviewer` + a password you share |
 
 Odoo and n8n stay private (you reach them over SSH); show them with screenshots or a short
 video.
@@ -211,14 +211,39 @@ during development.
 5. Copy a backup off the server once to know it works:
    `scp -i ~/.ssh/propflow_oracle -r ubuntu@<public IP>:/opt/propflow-backups ./propflow-backups`.
 
+## 8b. Optional: send real emails to visitors
+
+By default every email is only captured in the mail viewer. To let visitors receive the reply
+to their inquiry:
+
+1. Create a Gmail account for the demo (for example `propflow.demo@gmail.com`), turn on
+   **2-Step Verification**, then create an **App Password** at
+   <https://myaccount.google.com/apppasswords>.
+2. On the server:
+
+   ```bash
+   sudo -iu deploy
+   cd /opt/propflow && deploy/enable-email.sh     # asks for the address and the App Password
+   ```
+
+   The script checks the login with Gmail before saving it in `.env`.
+
+What changes: Mailpit still keeps every email for `/mail/` and relays it through Gmail, except
+to the fictional staff and test domains (`example.com`, `.test`); manual "release" from the
+viewer is disabled. Customer emails end with a demo notice instead of the STOP line (replies
+go to the Gmail inbox and are not processed), and no reminders are sent. The buyer site says
+that emails really arrive. Gmail allows about 500 emails a day; the demo caps public inquiries
+at `PUBLIC_DAILY_LIMIT` (100) a day and 3 emails per address. Undo with
+`deploy/enable-email.sh --disable`.
+
 ## 9. What to send the company
 
 - The buyer site address, the staff dashboard address with the staff token, and the mail viewer
   address with the `reviewer` password.
 - The GitHub repository and `docs/demo.md` (a 10-minute walkthrough), plus screenshots or a
   short video of Odoo and n8n.
-- One sentence of context: all homes, people and data are fictional; emails are captured, not
-  delivered; the AI runs on a free tier, so under heavy use some inquiries are handed to a
+- One sentence of context: all homes, people and data are fictional; emails to staff are
+  captured, not delivered; the AI runs on a free tier, so under heavy use some inquiries are handed to a
   salesperson instead of being qualified automatically (by design).
 
 ## 10. Day-to-day

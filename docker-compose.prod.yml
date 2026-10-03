@@ -1,4 +1,4 @@
-# Public demo overrides (Oracle Cloud VM). On the server, set in .env:
+# Public demo overrides (AWS or Oracle Cloud server). On the server, set in .env:
 #   COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
 # so every `docker compose` and `make` command includes this file. See docs/deployment-guide.md.
 #
@@ -35,6 +35,9 @@ services:
       # Public inquiries per 24 hours across all visitors (protects the free LLM quota)
       PUBLIC_DAILY_LIMIT: ${PUBLIC_DAILY_LIMIT:-100}
       MAIL_VIEWER_PATH: /mail/
+      # Set by deploy/enable-email.sh: customer emails really reach visitors (demo notice
+      # instead of the STOP line, no reminders)
+      CUSTOMER_EMAIL_DELIVERY: ${MAIL_RELAY_ENABLED:-false}
 
   migrate:
     mem_limit: 256m
@@ -57,6 +60,20 @@ services:
       MP_WEBROOT: /mail/  # served by Caddy under https://PUBLIC_HOST/mail/ (password protected)
       MP_DATABASE: /data/mailpit.db  # keep captured emails across restarts and deploys
       MP_MAX_MESSAGES: "2000"
+      # Optional real delivery (deploy/enable-email.sh): Mailpit keeps a copy of every email
+      # and relays it through the configured SMTP account, except to the fictional staff and
+      # test domains. Manual "release" from the viewer is disabled (allowed list matches
+      # nothing), so the viewer password cannot be used to send mail to arbitrary addresses.
+      MP_SMTP_RELAY_ALL: ${MAIL_RELAY_ENABLED:-false}
+      MP_SMTP_RELAY_HOST: ${MAIL_RELAY_HOST:-}
+      MP_SMTP_RELAY_PORT: ${MAIL_RELAY_PORT:-587}
+      MP_SMTP_RELAY_STARTTLS: "true"
+      MP_SMTP_RELAY_AUTH: plain
+      MP_SMTP_RELAY_USERNAME: ${MAIL_RELAY_USERNAME:-}
+      MP_SMTP_RELAY_PASSWORD: ${MAIL_RELAY_PASSWORD:-}
+      MP_SMTP_RELAY_OVERRIDE_FROM: ${MAIL_RELAY_USERNAME:-}
+      MP_SMTP_RELAY_BLOCKED_RECIPIENTS: '@example\.(com|net|org)$$|\.(test|invalid|example|localhost)$$'
+      MP_SMTP_RELAY_ALLOWED_RECIPIENTS: '^$$'
     volumes:
       - mailpit_data:/data
 

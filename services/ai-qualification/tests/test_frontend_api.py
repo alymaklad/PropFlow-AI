@@ -139,7 +139,8 @@ def test_public_config_and_daily_cap(migrated_db, monkeypatch):
     public._hits.clear()
     try:
         client = TestClient(app)
-        assert client.get("/public/config").json() == {"demo": True, "mail_viewer": "/mail/"}
+        assert client.get("/public/config").json() == {"demo": True, "mail_viewer": "/mail/",
+                                                       "email_delivery": False}
         for n in range(2):
             migrated_db.execute("INSERT INTO intake_events (idempotency_key, source, raw_payload)"
                                 " VALUES (%s, 'form', '{}')", (f"web:{n}",))
@@ -153,6 +154,7 @@ def test_public_config_outside_demo():
     app.dependency_overrides[get_settings] = lambda: Settings(None, None, "fake")
     try:
         assert TestClient(app).get("/public/config").json() == {"demo": False,
-                                                               "mail_viewer": None}
+                                                               "mail_viewer": None,
+                                                               "email_delivery": False}
     finally:
         app.dependency_overrides.clear()

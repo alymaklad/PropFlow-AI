@@ -266,6 +266,18 @@ def test_opt_out_stops_reminders(migrated_db, db_client):
 
 
 @needs_db
+def test_demo_with_real_delivery_stops_reminders(migrated_db, monkeypatch):
+    monkeypatch.setenv("DEMO_MODE", "true")
+    monkeypatch.setenv("CUSTOMER_EMAIL_DELIVERY", "true")
+    odoo = FakeOdoo()
+    _sequence(migrated_db, odoo)
+    result = due_followups(migrated_db, odoo, CAL, now=at(6, 10))
+    assert result["messages"] == [] and result["stopped"][0]["reason"] == "demo_no_reminders"
+    assert migrated_db.execute("SELECT status, stop_reason FROM followup_sequences").fetchone() \
+        == ("stopped", "demo_no_reminders")
+
+
+@needs_db
 def test_no_reminders_outside_business_hours(migrated_db):
     odoo = FakeOdoo()
     _sequence(migrated_db, odoo)

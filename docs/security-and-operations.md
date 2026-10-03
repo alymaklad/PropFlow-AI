@@ -35,7 +35,7 @@ customers are involved.
 | Odoo | Leads, contacts, notes, activities (system of record) | Odoo administrators; erasure returns the affected lead ids |
 | PropFlow Postgres | Raw inquiries (audit), AI traces, recipient addresses, reminder sequences, consents | `POST /v1/privacy/retention` (`make retention DAYS=30`) anonymises older data; `POST /v1/privacy/erase` removes one contact |
 | n8n | Execution history (inputs and outputs of each run) | Pruned after `N8N_EXECUTIONS_MAX_AGE_HOURS` (168 in dev) |
-| Mailpit / GreenMail | Dev mail only | Clear from their UIs; not used in production |
+| Mailpit / GreenMail | Dev mail; on the public demo Mailpit keeps a copy of every email and can relay customer emails through Gmail (`deploy/enable-email.sh`) | Clear from their UIs; `MP_MAX_MESSAGES` caps the demo at 2000 |
 | Logs | No names, emails, phone numbers or message text (reviewed 2026-10-02): only ids, HTTP codes and error classes | Docker log rotation |
 | Groq | Prompts containing the inquiry text | Provider terms; synthetic data only until reviewed |
 

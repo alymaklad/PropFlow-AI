@@ -72,7 +72,8 @@ class PublicInquiry(BaseModel):
 def public_config(settings: Settings = Depends(get_settings)) -> dict:
     """What the buyer site needs to know about this deployment."""
     return {"demo": settings.demo_mode,
-            "mail_viewer": settings.mail_viewer_path if settings.demo_mode else None}
+            "mail_viewer": settings.mail_viewer_path if settings.demo_mode else None,
+            "email_delivery": settings.demo_mode and settings.customer_email_delivery}
 
 
 def daily_limit_reached(conn: psycopg.Connection, limit: int) -> bool:

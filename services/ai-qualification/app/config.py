@@ -29,6 +29,7 @@ class Settings:
     demo_mode: bool = False
     public_daily_limit: int = 0  # 0 = no daily cap
     mail_viewer_path: str | None = None
+    customer_email_delivery: bool = False  # demo: customer emails really reach the visitor
     version: str = "0.1.0"
 
 
@@ -59,6 +60,8 @@ def load_settings() -> Settings:
         demo_mode=os.environ.get("DEMO_MODE", "false").lower() == "true",
         public_daily_limit=int(os.environ.get("PUBLIC_DAILY_LIMIT") or 0),
         mail_viewer_path=os.environ.get("MAIL_VIEWER_PATH") or None,
+        customer_email_delivery=os.environ.get("CUSTOMER_EMAIL_DELIVERY", "false").lower()
+        == "true",
     )
 
 

@@ -54,7 +54,7 @@ function query(filters: Filters): string {
   return text ? `?${text}` : "";
 }
 
-export type PublicConfig = { demo: boolean; mail_viewer: string | null };
+export type PublicConfig = { demo: boolean; mail_viewer: string | null; email_delivery?: boolean };
 
 export async function getConfig(): Promise<PublicConfig> {
   const response = await fetch("/api/public/config");

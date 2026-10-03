@@ -17,9 +17,9 @@ const STAGES = [
   { value: "ready_to_buy", text: "Ready to buy" },
 ];
 
-type Props = { search: Search; message: string; onMessageChange: (m: string) => void };
+type Props = { search: Search; message: string; onMessageChange: (m: string) => void; demoDelivery?: boolean };
 
-export function InquiryForm({ search, message, onMessageChange }: Props) {
+export function InquiryForm({ search, message, onMessageChange, demoDelivery = false }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -131,7 +131,11 @@ export function InquiryForm({ search, message, onMessageChange }: Props) {
       </div>
       {problem && <p className="form-problem" role="alert">{problem}</p>}
       <button type="submit" className="btn" disabled={sending}>{sending ? "Sending..." : "Send to an advisor"}</button>
-      <p className="field-hint">We use your details only to answer this inquiry. Reply STOP to any email and we won't contact you again.</p>
+      <p className="field-hint">
+        {demoDelivery
+          ? "We use your details only to answer this inquiry: one email, no reminders, no mailing list."
+          : "We use your details only to answer this inquiry. Reply STOP to any email and we won't contact you again."}
+      </p>
     </form>
   );
 }

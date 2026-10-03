@@ -9,7 +9,7 @@ from psycopg.types.json import Jsonb
 from app.auth import require_api_key
 from app.config import load_settings
 from app.deps import get_db
-from app.messages import TEMPLATE_VERSION, TemplateError, render
+from app.messages import DEMO_NOTICE, OPT_OUT_LINE, TEMPLATE_VERSION, TemplateError, render
 from app.privacy import apply_retention, erase_contact
 from app.schemas import (
     ConsentRequest,
@@ -90,17 +90,23 @@ def prepare(conn: psycopg.Connection, *, lead_ref: str, to_email: str | None,
     claim. Raises TemplateError."""
     if not to_email:
         return PrepareOut(send=False, reason="no_email")
+    settings = load_settings()
+    demo_delivery = settings.demo_mode and settings.customer_email_delivery
+    if demo_delivery and template == "customer_reminder":
+        return PrepareOut(send=False, reason="demo_no_reminders")
     if check_consent and opted_out(conn, [to_email, *contact_keys], "email"):
         return PrepareOut(send=False, reason="opted_out")
     if check_consent:
         limit = daily_limit if daily_limit is not None \
-            else load_settings().max_customer_emails_per_day
+            else settings.max_customer_emails_per_day
         existing = conn.execute(
             "SELECT 1 FROM outbound_messages WHERE lead_ref = %s AND template = %s"
             " AND sequence_no = %s", (lead_ref, template, sequence_no)).fetchone()
         if existing is None and sent_today(conn, to_email) >= limit:
             return PrepareOut(send=False, reason="rate_limited")
     subject, text = render(template, data)
+    if demo_delivery:
+        text = text.replace(OPT_OUT_LINE, DEMO_NOTICE)
     claim = claim_message(conn, lead_ref, "email", template, sequence_no, to_address=to_email)
     if not claim.send:
         return PrepareOut(send=False, message_id=claim.message_id,

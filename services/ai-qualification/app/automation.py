@@ -274,10 +274,10 @@ def due_followups(conn: psycopg.Connection, odoo: OdooClient, cal: BusinessCalen
         out = prepare(conn, lead_ref=str(cid), to_email=to_email, contact_keys=list(keys),
                       template="customer_reminder", sequence_no=number,
                       data={"name": name, "requirements": reqs, "advisor_name": advisor})
-        if out.reason == "opted_out":
-            conn.execute("UPDATE followup_sequences SET status = 'stopped', stop_reason ="
-                         " 'opted_out' WHERE id = %s", (seq_id,))
-            stopped.append({"sequence_id": str(seq_id), "reason": "opted_out"})
+        if out.reason in ("opted_out", "demo_no_reminders"):
+            conn.execute("UPDATE followup_sequences SET status = 'stopped', stop_reason = %s"
+                         " WHERE id = %s", (out.reason, seq_id))
+            stopped.append({"sequence_id": str(seq_id), "reason": out.reason})
             continue
         done = number >= max_reminders
         conn.execute(

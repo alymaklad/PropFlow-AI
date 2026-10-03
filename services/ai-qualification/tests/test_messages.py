@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from app.messages import OPT_OUT_LINE, TemplateError, first_name, render, summary
+from app.messages import DEMO_NOTICE, OPT_OUT_LINE, TemplateError, first_name, render, summary
 from tests.conftest import needs_db
 
 REQ = {"property_type": "villa", "location": "Sheikh Zayed", "bedrooms": 4,
@@ -116,3 +116,22 @@ def test_prepare_without_email_or_with_bad_data(db_client):
             "subject": None, "text": None, "template_version": None}
     r = db_client.post("/v1/messages/prepare", json={**PREPARE, "data": {}})
     assert r.status_code == 422
+
+
+@needs_db
+def test_demo_with_real_delivery_replaces_stop_line_and_skips_reminders(db_client, monkeypatch):
+    monkeypatch.setenv("DEMO_MODE", "true")
+    monkeypatch.setenv("CUSTOMER_EMAIL_DELIVERY", "true")
+    reminder = db_client.post("/v1/messages/prepare", json=PREPARE).json()
+    assert (reminder["send"], reminder["reason"]) == (False, "demo_no_reminders")
+    out = db_client.post("/v1/messages/prepare", json={
+        **PREPARE, "template": "customer_clarification",
+        "data": DATA["customer_clarification"]}).json()
+    assert out["send"] and DEMO_NOTICE in out["text"] and OPT_OUT_LINE not in out["text"]
+
+
+@needs_db
+def test_demo_without_real_delivery_keeps_stop_line(db_client, monkeypatch):
+    monkeypatch.setenv("DEMO_MODE", "true")
+    out = db_client.post("/v1/messages/prepare", json=PREPARE).json()
+    assert out["send"] and OPT_OUT_LINE in out["text"]

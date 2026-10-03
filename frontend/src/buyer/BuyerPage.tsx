@@ -52,8 +52,14 @@ export function BuyerPage() {
     <div className="buyer">
       {config.demo && (
         <p className="demo-banner">
-          This is a demo with fictional homes and data. Emails are captured, not delivered
-          {config.mail_viewer ? <>: see them in the <a href={config.mail_viewer}>mail viewer</a> (password in the application).</> : "."}
+          {config.email_delivery ? <>
+            This is a demo with fictional homes and data. Send an inquiry with your own email
+            address and the reply arrives in your inbox
+            {config.mail_viewer ? <>; every email is also in the <a href={config.mail_viewer}>mail viewer</a> (password in the application).</> : "."}
+          </> : <>
+            This is a demo with fictional homes and data. Emails are captured, not delivered
+            {config.mail_viewer ? <>: see them in the <a href={config.mail_viewer}>mail viewer</a> (password in the application).</> : "."}
+          </>}
           {" "}The <Link to="/staff">staff dashboard</Link> shows what happens next.
         </p>
       )}
@@ -97,7 +103,7 @@ export function BuyerPage() {
               if not, your advisor looks further and gets back to you.
             </p>
           </div>
-          <InquiryForm search={search} message={message} onMessageChange={setMessage} />
+          <InquiryForm search={search} message={message} onMessageChange={setMessage} demoDelivery={config.demo && !!config.email_delivery} />
         </section>
       </main>
 

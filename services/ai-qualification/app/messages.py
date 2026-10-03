@@ -10,6 +10,11 @@ from collections.abc import Callable
 TEMPLATE_VERSION = "customer-v1"
 OPT_OUT_LINE = "To stop receiving these emails, reply STOP."
 SIGNATURE = "PropFlow Real Estate"
+# Public demo with real delivery: replies are not processed, so the STOP line would be a
+# promise the system cannot keep. Reminders are switched off instead (see outbound.prepare).
+DEMO_NOTICE = ("This email comes from PropFlow AI, a portfolio demo: the homes, prices and "
+               "advisors are fictional, and you will not receive further emails about this "
+               "inquiry. Replies reach the developer, not an estate agent.")
 
 
 class TemplateError(ValueError):
