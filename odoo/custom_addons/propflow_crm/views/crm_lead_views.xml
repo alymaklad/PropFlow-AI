@@ -12,17 +12,18 @@
                             <field name="propflow_property_type"/>
                             <field name="propflow_location"/>
                             <field name="propflow_bedrooms"/>
-                            <field name="propflow_budget_min"/>
-                            <field name="propflow_budget_max"/>
+                            <field name="propflow_budget_min" invisible="not propflow_budget_min"/>
+                            <field name="propflow_budget_max" invisible="not propflow_budget_max"/>
                             <field name="propflow_currency"/>
                             <field name="propflow_delivery_pref"/>
-                            <field name="propflow_timeline_months"/>
+                            <field name="propflow_timeline_months" invisible="not propflow_timeline_months"/>
                         </group>
                         <group string="Qualification">
                             <field name="propflow_priority"/>
                             <field name="propflow_score"/>
                             <field name="propflow_rules_version"/>
                             <field name="propflow_exception_status"/>
+                            <field name="propflow_handoff_reason" invisible="propflow_exception_status != 'handoff'"/>
                             <field name="propflow_automation" widget="radio" options="{'horizontal': true}"/>
                             <field name="propflow_last_contact"/>
                             <field name="propflow_next_followup"/>
@@ -38,6 +39,33 @@
                     </group>
                 </page>
             </xpath>
+        </field>
+    </record>
+
+    <!-- Reviewers (read-only) see the lead but none of the action buttons, which would only
+         answer with an access error. -->
+    <record id="crm_lead_view_form_propflow_reviewer" model="ir.ui.view">
+        <field name="name">crm.lead.form.propflow.reviewer</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+            <data>
+            <xpath expr="//header/button[@name='action_set_won_rainbowman']" position="attributes">
+                <attribute name="groups">!propflow_crm.group_propflow_reviewer</attribute>
+            </xpath>
+            <xpath expr="//header/button[@data-hotkey='v']" position="attributes">
+                <attribute name="groups">!propflow_crm.group_propflow_reviewer</attribute>
+            </xpath>
+            <xpath expr="//header/button[@name='toggle_active']" position="attributes">
+                <attribute name="groups">!propflow_crm.group_propflow_reviewer</attribute>
+            </xpath>
+            <xpath expr="//header/button[@data-hotkey='l'][1]" position="attributes">
+                <attribute name="groups">!propflow_crm.group_propflow_reviewer</attribute>
+            </xpath>
+            <xpath expr="//header/button[@data-hotkey='l'][2]" position="attributes">
+                <attribute name="groups">!propflow_crm.group_propflow_reviewer</attribute>
+            </xpath>
+            </data>
         </field>
     </record>
 

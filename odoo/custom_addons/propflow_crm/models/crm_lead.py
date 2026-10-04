@@ -56,6 +56,7 @@ class CrmLead(models.Model):
          ("sync_error", "Sync error")],
         "Exception status", default="none", index=True,
     )
+    propflow_handoff_reason = fields.Char("Handoff reason", readonly=True)
     propflow_automation = fields.Selection(
         [("active", "Active"), ("paused", "Paused")], "PropFlow automation", default="active",
         index=True,

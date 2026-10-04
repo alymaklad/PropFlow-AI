@@ -1,7 +1,7 @@
 {
     "name": "PropFlow CRM",
     "summary": "PropFlow AI integration fields, security groups and helpers for CRM leads",
-    "version": "17.0.1.2.0",
+    "version": "17.0.1.3.0",
     "category": "Sales/CRM",
     "license": "LGPL-3",
     "author": "PropFlow AI",

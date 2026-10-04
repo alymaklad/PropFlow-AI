@@ -58,9 +58,23 @@ def lead_name(lead: dict) -> str:
     return f"{what}{where} – {who}"
 
 
+# Plain-English names for the scoring rules in the explanation salespeople read in Odoo
+RULE_LABELS = {
+    "budget_provided": "Budget",
+    "timeline_within_3_months": "Timeline",
+    "requirements_complete": "Requirements",
+    "explicit_high_intent": "Buying intent",
+    "followup_response": "Follow-up reply",
+}
+# Odoo's own priority stars ("0" to "3"), so sorting by stars follows the PropFlow score
+PRIORITY_STARS = {"high": "3", "standard": "2", "nurture": "1"}
+
+
 def score_explanation(score: dict) -> str:
-    lines = [f"Total {score['total']} ({score['priority']}), rules {score['rules_version']}"]
-    lines += [f"{c['rule']}: +{c['points']} ({c['reason']})" for c in score["components"]]
+    lines = [f"Total {score['total']} ({score['priority']}) out of 100, "
+             f"rules {score['rules_version']}"]
+    lines += [f"{RULE_LABELS.get(c['rule'], c['rule'])}: +{c['points']} ({c['reason']})"
+              for c in score["components"]]
     return "\n".join(lines)
 
 
@@ -85,6 +99,7 @@ def score_values(score: dict, exception_status: str) -> dict:
     return {
         "propflow_score": score["total"],
         "propflow_priority": score["priority"],
+        "priority": PRIORITY_STARS[score["priority"]],
         "propflow_rules_version": score["rules_version"],
         "propflow_score_explanation": score_explanation(score),
         "propflow_exception_status": exception_status,

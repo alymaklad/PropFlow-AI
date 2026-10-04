@@ -13,7 +13,7 @@ from uuid import UUID
 import psycopg
 
 from app.business_time import BusinessCalendar
-from app.crm import fetch_owner, lead_url
+from app.crm import PRIORITY_STARS, RULE_LABELS, fetch_owner, lead_url
 from app.odoo_client import OdooClient
 from app.qualification import _OPT_OUT
 from app.routers.outbound import prepare
@@ -90,17 +90,20 @@ def rescore_for_reply(odoo: OdooClient, lead_id: int) -> dict:
                             context={"active_test": False})[0]
     explanation = lead.get("propflow_score_explanation") or ""
     old = lead.get("propflow_score") or 0
-    marker = re.compile(r"^followup_response: \+0 .*$", re.M)
+    # Matches the current wording and the rule id used before the plain-English labels
+    marker = re.compile(r"^(?:Follow-up reply|followup_response): \+0 .*$", re.M)
     if not marker.search(explanation):
         return {"before": old, "after": old, "changed": False, "user_id": lead["user_id"]}
     new = min(old + points, 100)
     thresholds = rules["priority_thresholds"]
     priority = ("high" if new >= thresholds["high"]
                 else "standard" if new >= thresholds["standard"] else "nurture")
-    explanation = marker.sub(f"followup_response: +{points} (customer replied)", explanation)
+    explanation = marker.sub(f"{RULE_LABELS['followup_response']}: +{points} (customer replied)",
+                             explanation)
     explanation = re.sub(r"^Total \d+ \(\w+\)", f"Total {new} ({priority})", explanation, count=1)
     odoo.execute("crm.lead", "write", [lead_id], {
         "propflow_score": new, "propflow_priority": priority,
+        "priority": PRIORITY_STARS[priority],
         "propflow_score_explanation": explanation})
     return {"before": old, "after": new, "priority": priority, "changed": True,
             "user_id": lead["user_id"]}

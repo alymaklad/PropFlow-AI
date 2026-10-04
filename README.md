@@ -21,7 +21,9 @@ All homes, people and data are fictional. Send an inquiry with your own email ad
 reply arrives in your inbox (one email, no reminders); emails to the fictional staff are only
 captured in the mail viewer. The AI runs on
 a free tier, so under heavy use some inquiries are handed to a salesperson instead of being
-qualified automatically (by design). A 10-minute walkthrough is in [docs/demo.md](docs/demo.md).
+qualified automatically (by design). Anything typed into the demo (names, emails, messages)
+is visible to everyone with the reviewer logins, so use test details. A 10-minute
+walkthrough is in [docs/demo.md](docs/demo.md).
 
 ## What happens to an inquiry
 

@@ -104,3 +104,19 @@ class TestPropflowLead(TransactionCase):
             lead.activity_schedule("mail.mail_activity_data_todo", summary="call")
         with self.assertRaises(AccessError):
             self.env["res.partner"].with_user(self.reviewer).create({"name": "new contact"})
+
+    def test_reviewer_form_has_no_action_buttons(self):
+        View = self.env["crm.lead"]
+        reviewer_arch = View.with_user(self.reviewer).get_views([(False, "form")])["views"]["form"]["arch"]
+        rep_arch = View.with_user(self.rep).get_views([(False, "form")])["views"]["form"]["arch"]
+        header = reviewer_arch.split("<header>")[1].split("</header>")[0]
+        self.assertNotIn("<button", header)
+        self.assertIn('name="stage_id"', header)
+        self.assertIn("Convert to Opportunity", rep_arch)
+
+    def test_handoff_reason_is_stored(self):
+        lead = self._lead()
+        lead.write({"propflow_exception_status": "handoff",
+                    "propflow_handoff_reason": "The customer asked to speak to a person"})
+        self.assertEqual(lead.propflow_handoff_reason, "The customer asked to speak to a person")
+

@@ -180,7 +180,9 @@ def test_reply_by_header_stops_reminders_rescores_and_notifies(email_env):
     assert body["score"] == {"before": 70, "after": 80, "priority": "high", "changed": True}
     lead = env["odoo"].leads[env["lead_id"]]
     assert lead["propflow_priority"] == "high"
-    assert "followup_response: +10 (customer replied)" in lead["propflow_score_explanation"]
+    # The stored explanation used the old rule id; the reply still finds and updates it
+    assert "Follow-up reply: +10 (customer replied)" in lead["propflow_score_explanation"]
+    assert lead["priority"] == "3"
     assert lead["propflow_score_explanation"].startswith("Total 80 (high)")
     (_, note), = env["odoo"].notes
     assert "SZ-VIL-201 on Tuesday" in note and "old" not in note

@@ -87,6 +87,7 @@ def test_handoff_pauses_automation_and_assigns_a_deadline(migrated_db):
     stored = odoo.leads[lead_id]
     assert stored["propflow_exception_status"] == "handoff"
     assert stored["propflow_automation"] == "paused"
+    assert stored["propflow_handoff_reason"] == "The customer asked to speak to a person"
     (activity_key, activity), = odoo.activities.items()
     assert activity_key[1] == "PropFlow handoff: contact the customer"
     assert activity["user_id"] == 10 and activity["deadline"] == "2026-10-04"

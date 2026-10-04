@@ -54,7 +54,9 @@ def test_creates_lead_with_round_robin_owner(migrated_db):
     assert stored["propflow_bedrooms"] == "3" and stored["propflow_priority"] == "standard"
     assert "&lt;b&gt;asap&lt;/b&gt;" in stored["description"] and "<br>" in stored["description"]
     assert stored["propflow_original_message"].endswith("<b>asap</b>")
-    assert "budget_provided: +20 (budget stated)" in stored["propflow_score_explanation"]
+    assert "Budget: +20 (budget stated)" in stored["propflow_score_explanation"]
+    assert "out of 100" in stored["propflow_score_explanation"]
+    assert stored["priority"] == "2"  # Odoo stars follow the PropFlow priority (standard)
 
 
 @needs_db

@@ -101,13 +101,15 @@ def create_handoff(conn: psycopg.Connection, odoo: OdooClient, cal: BusinessCale
     owner = fetch_owner(odoo, user_id) or team_manager(odoo, team_id)
     due_at = _deadline(cal, now, priority)
     contact_by = cal.describe(due_at)
-    odoo.execute("crm.lead", "write", [lead_id], {"propflow_exception_status": "handoff",
-                                                  "propflow_automation": "paused"})
+    reason = reason_text(reasons)
+    odoo.execute("crm.lead", "write", [lead_id], {
+        "propflow_exception_status": "handoff", "propflow_automation": "paused",
+        "propflow_handoff_reason": reason[:1].upper() + reason[1:]})
     activity_id = None
     if owner:
         activity_id = odoo.execute(
             "crm.lead", "propflow_schedule_activity", [lead_id], HANDOFF_SUMMARY, owner["id"],
-            due_at.date().isoformat(), f"Handed off: {reason_text(reasons)}.")
+            due_at.date().isoformat(), f"Handed off: {reason}.")
     odoo.execute("crm.lead", "propflow_post_note", [lead_id],
                  context_note(lead, reasons, matches, contact_by))
     with conn.transaction():

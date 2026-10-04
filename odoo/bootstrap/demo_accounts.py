@@ -3,7 +3,8 @@
 #  - replaces the default admin password ("admin") with ADMIN_PASSWORD, if it is still the
 #    default (a password someone has already changed is left alone);
 #  - creates or refreshes the read-only "reviewer" user with REVIEWER_PASSWORD, so a reviewer
-#    who changes it cannot lock the others out for longer than until the next deploy.
+#    who changes it cannot lock the others out for longer than until the next deploy;
+#  - shows dates as day/month/year.
 import os
 
 from odoo.exceptions import AccessDenied
@@ -17,6 +18,9 @@ except AccessDenied:
 if default_admin:
     admin.password = os.environ["ADMIN_PASSWORD"]
 print(f"PROPFLOW_ADMIN_ROTATED={int(default_admin)}")
+
+# Dates as day/month/year (the demo is set in Egypt); en_US defaults to month/day.
+env["res.lang"]._lang_get("en_US").write({"date_format": "%d/%m/%Y"})
 
 LOGIN = "reviewer"
 Users = env["res.users"].with_context(no_reset_password=True)
