@@ -32,6 +32,11 @@ main() {
   echo "==> Deploying $ref ($(git log -1 --format='%h %s'))"
 
   docker compose up -d --build --remove-orphans
+  # Caddy reads its config once at start; a new deploy/Caddyfile needs a fresh container
+  if ! git diff --quiet "$previous" "$current" -- deploy/Caddyfile; then
+    echo "==> Caddyfile changed: restarting Caddy"
+    docker compose up -d --force-recreate caddy
+  fi
   wait_healthy ai-service
   wait_healthy odoo
 
