@@ -9,6 +9,7 @@ from psycopg.types.json import Jsonb
 from app.auth import require_api_key
 from app.config import load_settings
 from app.deps import get_db
+from app.email_html import render_html
 from app.messages import DEMO_NOTICE, OPT_OUT_LINE, TEMPLATE_VERSION, TemplateError, render
 from app.privacy import apply_retention, erase_contact
 from app.schemas import (
@@ -107,12 +108,15 @@ def prepare(conn: psycopg.Connection, *, lead_ref: str, to_email: str | None,
     subject, text = render(template, data)
     if demo_delivery:
         text = text.replace(OPT_OUT_LINE, DEMO_NOTICE)
+    footer = ((DEMO_NOTICE if demo_delivery else OPT_OUT_LINE) if template.startswith("customer_")
+              else "Internal PropFlow notification.")
+    html = render_html(template, data, text, footer, settings.public_site_url)
     claim = claim_message(conn, lead_ref, "email", template, sequence_no, to_address=to_email)
     if not claim.send:
         return PrepareOut(send=False, message_id=claim.message_id,
                           reason="already_sent" if claim.status == "sent" else claim.status)
     return PrepareOut(send=True, message_id=claim.message_id, to=to_email, subject=subject,
-                      text=text, template_version=TEMPLATE_VERSION)
+                      text=text, html=html, template_version=TEMPLATE_VERSION)
 
 
 @router.post("/messages/prepare", response_model=PrepareOut)

@@ -135,3 +135,33 @@ def test_demo_without_real_delivery_keeps_stop_line(db_client, monkeypatch):
     monkeypatch.setenv("DEMO_MODE", "true")
     out = db_client.post("/v1/messages/prepare", json=PREPARE).json()
     assert out["send"] and OPT_OUT_LINE in out["text"]
+
+
+@pytest.mark.parametrize("template", sorted(DATA))
+def test_every_customer_template_has_an_html_version_with_the_footer(template):
+    from app.email_html import render_html
+    _, text = render(template, DATA[template])
+    html = render_html(template, DATA[template], text, OPT_OUT_LINE)
+    assert html.startswith("<!doctype html>") and "Hi Sara," in html
+    assert OPT_OUT_LINE in html
+    assert not PROMISES.search(html)
+
+
+def test_html_shortlist_shows_listing_facts_and_escapes_customer_values():
+    from app.email_html import render_html
+    data = {**DATA["customer_shortlist"], "name": "<b>Sara</b>"}
+    _, text = render("customer_shortlist", data)
+    html = render_html("customer_shortlist", data, text, DEMO_NOTICE)
+    assert "SZ-VIL-201" in html and "14.2 million EGP" in html and "Checked 2 days ago" in html
+    assert "<b>Sara</b>" not in html and "&lt;b&gt;Sara&lt;/b&gt;" in html
+    assert DEMO_NOTICE in html
+
+
+def test_html_shortlist_shows_listing_photos_only_when_the_site_url_is_known():
+    from app.email_html import render_html
+    data = DATA["customer_shortlist"]
+    _, text = render("customer_shortlist", data)
+    assert "<img" not in render_html("customer_shortlist", data, text, OPT_OUT_LINE)
+    html = render_html("customer_shortlist", data, text, OPT_OUT_LINE, "https://homes.test")
+    assert '<img src="https://homes.test/listings/villa-' in html
+    assert "Photos are illustrative." in html

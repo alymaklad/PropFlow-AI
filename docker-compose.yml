@@ -149,8 +149,11 @@ services:
       SMTP_PORT: ${SMTP_PORT:-1025}
       NOTIFY_FROM_EMAIL: ${NOTIFY_FROM_EMAIL:-propflow-noreply@example.com}
       ALERT_EMAIL: ${ALERT_EMAIL:-ops@example.com}
-      # Customer replies go here (Reply-To on every outgoing email)
+      # Inquiry inbox (GreenMail in this stack)
       INBOUND_EMAIL: ${INBOUND_EMAIL:-leads@propflow.test}
+      # Reply-To on outgoing emails: the inquiry inbox, or the real sending account when
+      # deploy/enable-email.sh turns on real delivery (a .test address would bounce)
+      REPLY_TO_EMAIL: ${REPLY_TO_EMAIL:-${INBOUND_EMAIL:-leads@propflow.test}}
       REPORT_EMAIL: ${REPORT_EMAIL:-ops@example.com}
     ports:
       - "127.0.0.1:${N8N_PORT:-5678}:5678"

@@ -21,6 +21,7 @@ from app.deps import get_db
 from app.forwarding import ForwardError, forward_to_intake
 from app.matching import FRESHNESS_DAYS
 from app.normalize import normalize_lead
+from app.photos import photo_path
 
 router = APIRouter(prefix="/public")
 
@@ -113,7 +114,8 @@ def listings(location: str | None = None, property_type: str | None = None,
             " FROM properties WHERE availability = 'available'"
             " AND last_verified_at >= now() - make_interval(days => %(fresh)s)",
             {"fresh": FRESHNESS_DAYS}).fetchone()
-    return {"listings": rows, "freshness_days": FRESHNESS_DAYS,
+    listings = [{**r, "photo": photo_path(r["listing_id"], r["property_type"])} for r in rows]
+    return {"listings": listings, "freshness_days": FRESHNESS_DAYS,
             "locations": options["locations"] or [],
             "property_types": options["property_types"] or []}
 

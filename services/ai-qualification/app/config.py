@@ -30,6 +30,7 @@ class Settings:
     public_daily_limit: int = 0  # 0 = no daily cap
     mail_viewer_path: str | None = None
     customer_email_delivery: bool = False  # demo: customer emails really reach the visitor
+    public_site_url: str | None = None  # buyer site, for listing photos in emails
     version: str = "0.1.0"
 
 
@@ -62,6 +63,7 @@ def load_settings() -> Settings:
         mail_viewer_path=os.environ.get("MAIL_VIEWER_PATH") or None,
         customer_email_delivery=os.environ.get("CUSTOMER_EMAIL_DELIVERY", "false").lower()
         == "true",
+        public_site_url=(os.environ.get("PUBLIC_SITE_URL") or "").rstrip("/") or None,
     )
 
 

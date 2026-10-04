@@ -112,6 +112,7 @@ export function BuyerPage() {
           Listings are confirmed with the owner or developer at least every two weeks. Prices and
           availability can still change; your advisor confirms them before any viewing.
         </p>
+        <p>Photos are illustrative, from <a href="https://unsplash.com">Unsplash</a>.</p>
       </footer>
     </div>
   );

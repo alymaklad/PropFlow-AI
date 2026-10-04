@@ -12,6 +12,7 @@ export type Listing = {
   amenities: string[];
   description: string | null;
   verified_days_ago: number;
+  photo: string; // illustrative photo under /listings/
 };
 
 export type ListingsResponse = {

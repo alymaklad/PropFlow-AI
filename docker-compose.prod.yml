@@ -35,6 +35,8 @@ services:
       # Public inquiries per 24 hours across all visitors (protects the free LLM quota)
       PUBLIC_DAILY_LIMIT: ${PUBLIC_DAILY_LIMIT:-100}
       MAIL_VIEWER_PATH: /mail/
+      # Listing photos in emails load from the buyer site
+      PUBLIC_SITE_URL: https://${PUBLIC_HOST}
       # Set by deploy/enable-email.sh: customer emails really reach visitors (demo notice
       # instead of the STOP line, no reminders)
       CUSTOMER_EMAIL_DELIVERY: ${MAIL_RELAY_ENABLED:-false}

@@ -264,6 +264,7 @@ class PrepareOut(BaseModel):
     to: str | None = None
     subject: str | None = None
     text: str | None = None
+    html: str | None = None  # same message as text, sent as the HTML alternative
     template_version: str | None = None
 
 

@@ -611,14 +611,15 @@
       ],
       "onError": "continueErrorOutput",
       "parameters": {
-        "fromEmail": "={{ $env.NOTIFY_FROM_EMAIL }}",
+        "fromEmail": "=\"PropFlow Real Estate\" <{{ $env.NOTIFY_FROM_EMAIL }}>",
         "toEmail": "={{ $json.to }}",
         "subject": "={{ $json.subject }}",
-        "emailFormat": "text",
+        "emailFormat": "both",
         "text": "={{ $json.text }}",
+        "html": "={{ $json.html }}",
         "options": {
           "appendAttribution": false,
-          "replyTo": "={{ $env.INBOUND_EMAIL }}"
+          "replyTo": "={{ $env.REPLY_TO_EMAIL }}"
         }
       },
       "credentials": {

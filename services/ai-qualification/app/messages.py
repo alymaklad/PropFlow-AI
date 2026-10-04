@@ -25,7 +25,7 @@ def first_name(name: str | None) -> str:
     return (name or "").strip().split(" ")[0] or "there"
 
 
-def _money(amount: float | None, currency: str | None) -> str:
+def money(amount: float | None, currency: str | None) -> str:
     if amount is None:
         return ""
     if amount >= 1_000_000:
@@ -47,9 +47,9 @@ def summary(req: dict) -> str:
     if req.get("location"):
         text += f" in {req['location']}"
     if req.get("budget_max") is not None:
-        text += f", up to {_money(req['budget_max'], req.get('currency'))}"
+        text += f", up to {money(req['budget_max'], req.get('currency'))}"
     elif req.get("budget_min") is not None:
-        text += f", from {_money(req['budget_min'], req.get('currency'))}"
+        text += f", from {money(req['budget_min'], req.get('currency'))}"
     return text
 
 
@@ -62,7 +62,7 @@ def _shortlist(d: dict) -> tuple[str, str]:
             f"{m['bedrooms']} bedrooms" if m.get("bedrooms") else m["property_type"].title())
         delivery = m["delivery_status"].replace("_", " ")
         lines.append(f"{i}. {m['listing_id']}: {beds}, {m['location']}, "
-                     f"{_money(m['price'], m['currency'])} ({delivery})")
+                     f"{money(m['price'], m['currency'])} ({delivery})")
         if m.get("description"):
             lines.append(f"   {m['description']}")
     lines += ["", "Availability and prices were checked within the last "

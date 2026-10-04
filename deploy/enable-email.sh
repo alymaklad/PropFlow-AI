@@ -6,6 +6,7 @@
 # Customer emails then reach the visitor through that account; Mailpit keeps a copy of every
 # email for /mail/ and never relays to the fictional staff and test domains. In this mode the
 # customer emails carry a demo notice instead of the STOP line and no reminders are sent.
+# Replies go to the same account (Reply-To), so nothing points at the fictional inbox.
 # The App Password is checked against Gmail before it is saved in .env (mode 600).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -26,7 +27,8 @@ PY
 }
 
 if [ "${1:-}" = "--disable" ]; then
-  set_env MAIL_RELAY_ENABLED false MAIL_RELAY_PASSWORD "" NOTIFY_FROM_EMAIL propflow-noreply@example.com
+  set_env MAIL_RELAY_ENABLED false MAIL_RELAY_PASSWORD "" NOTIFY_FROM_EMAIL propflow-noreply@example.com \
+    REPLY_TO_EMAIL ""
 else
   read -rp "Gmail address that sends the emails: " address
   read -rsp "App Password for it (hidden; spaces are fine): " password; echo
@@ -48,7 +50,8 @@ except OSError as exc:
 print("Login OK.")
 PY
   set_env MAIL_RELAY_ENABLED true MAIL_RELAY_HOST smtp.gmail.com MAIL_RELAY_PORT 587 \
-    MAIL_RELAY_USERNAME "$address" MAIL_RELAY_PASSWORD "$password" NOTIFY_FROM_EMAIL "$address"
+    MAIL_RELAY_USERNAME "$address" MAIL_RELAY_PASSWORD "$password" NOTIFY_FROM_EMAIL "$address" \
+    REPLY_TO_EMAIL "$address"
 fi
 
 docker compose up -d mailpit ai-service n8n

@@ -10,13 +10,14 @@ export function ListingRow({ listing, onAsk }: Props) {
     listing.bathrooms ? `${listing.bathrooms} bathroom${listing.bathrooms === 1 ? "" : "s"}` : null,
     DELIVERY[listing.delivery_status],
   ].filter(Boolean).join(", ");
+  const title = `${listingTitle(listing.bedrooms, listing.property_type)} in ${listing.location}`;
   return (
     <article className="listing" aria-labelledby={`l-${listing.listing_id}`}>
-      <p className="listing-price num">{formatPrice(listing.price, listing.currency)}</p>
+      <img className="listing-photo" src={listing.photo} alt="" width={1200} height={800}
+        loading="lazy" decoding="async" />
       <div className="listing-body">
-        <h3 id={`l-${listing.listing_id}`}>
-          {listingTitle(listing.bedrooms, listing.property_type)} in {listing.location}
-        </h3>
+        <p className="listing-price num">{formatPrice(listing.price, listing.currency)}</p>
+        <h3 id={`l-${listing.listing_id}`}>{title}</h3>
         <p className="listing-facts">
           {facts}
           {listing.amenities.length > 0 && (
