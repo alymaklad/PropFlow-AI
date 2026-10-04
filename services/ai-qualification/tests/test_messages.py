@@ -113,7 +113,7 @@ def test_opting_back_in_allows_messages(db_client):
 def test_prepare_without_email_or_with_bad_data(db_client):
     assert db_client.post("/v1/messages/prepare", json={**PREPARE, "to_email": None}).json() \
         == {"send": False, "message_id": None, "reason": "no_email", "to": None,
-            "subject": None, "text": None, "template_version": None}
+            "subject": None, "text": None, "html": None, "template_version": None}
     r = db_client.post("/v1/messages/prepare", json={**PREPARE, "data": {}})
     assert r.status_code == 422
 
