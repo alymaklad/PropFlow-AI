@@ -24,6 +24,12 @@ class TestPropflowLead(TransactionCase):
             "email": "propflow-rep-test@example.com",
             "groups_id": [(6, 0, [cls.env.ref("sales_team.group_sale_salesman").id])],
         })
+        cls.reviewer = Users.create({
+            "name": "Reviewer (test)",
+            "login": "propflow-reviewer-test",
+            "email": "propflow-reviewer-test@example.com",
+            "groups_id": [(6, 0, [cls.env.ref("propflow_crm.group_propflow_reviewer").id])],
+        })
 
     def _lead(self, **vals):
         return self.env["crm.lead"].with_user(self.integration).create(
@@ -74,3 +80,27 @@ class TestPropflowLead(TransactionCase):
         self.assertNotIn("<script>", message.body)
         self.assertIn("3 bedrooms", message.body)
         self.assertIn("<br>", message.body)
+
+    def test_reviewer_can_read_leads_and_see_the_crm_menu(self):
+        lead = self._lead(propflow_location="Maadi", user_id=self.rep.id)
+        as_reviewer = lead.with_user(self.reviewer)
+        self.assertEqual(as_reviewer.propflow_location, "Maadi")
+        self.assertEqual(as_reviewer.user_id.name, "Rep (test)")
+        menus = self.env["ir.ui.menu"].with_user(self.reviewer)._visible_menu_ids()
+        self.assertIn(self.env.ref("crm.crm_menu_root").id, menus)
+        self.assertIn(self.env.ref("crm.crm_menu_leads").id, menus)
+
+    def test_reviewer_cannot_change_anything(self):
+        lead = self._lead().with_user(self.reviewer)
+        with self.assertRaises(AccessError):
+            lead.write({"name": "changed"})
+        with self.assertRaises(AccessError):
+            self.env["crm.lead"].with_user(self.reviewer).create({"name": "new"})
+        with self.assertRaises(AccessError):
+            lead.unlink()
+        with self.assertRaises(AccessError):
+            lead.message_post(body="a note", message_type="comment")
+        with self.assertRaises(AccessError):
+            lead.activity_schedule("mail.mail_activity_data_todo", summary="call")
+        with self.assertRaises(AccessError):
+            self.env["res.partner"].with_user(self.reviewer).create({"name": "new contact"})

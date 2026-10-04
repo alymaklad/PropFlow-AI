@@ -13,4 +13,22 @@
         <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
         <field name="comment">For the PropFlow service account only. Grants create/read/write on CRM leads and contacts, and read access to sales teams and stages.</field>
     </record>
+
+    <!-- Read-only account for people reviewing the public demo: they can open the CRM, the
+         leads with their PropFlow tab, notes and activities, but cannot create, change or
+         delete anything (posting notes and scheduling activities need write access). -->
+    <record id="group_propflow_reviewer" model="res.groups">
+        <field name="name">PropFlow Reviewer (read-only)</field>
+        <field name="category_id" ref="module_category_propflow"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="comment">For demo reviewers. Read access to CRM leads, contacts, sales teams, stages and tags; no write, create or delete.</field>
+    </record>
+
+    <!-- The CRM app and its Leads menu are limited to sales groups; let reviewers see them -->
+    <record id="crm.crm_menu_root" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('group_propflow_reviewer'))]"/>
+    </record>
+    <record id="crm.crm_menu_leads" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('group_propflow_reviewer'))]"/>
+    </record>
 </odoo>

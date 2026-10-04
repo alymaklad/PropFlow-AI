@@ -12,9 +12,12 @@ What reviewers will get:
 | `https://<name>.duckdns.org` | Buyer site | Public |
 | `https://<name>.duckdns.org/staff` | Staff dashboard | Staff token you share |
 | `https://<name>.duckdns.org/mail/` | Every email the system sent (captured; optionally also delivered, section 8b) | User `reviewer` + a password you share |
+| `https://odoo.<name>.duckdns.org` | Odoo CRM: leads, PropFlow tab, notes, activities | User `reviewer` + `ODOO_REVIEWER_PASSWORD` (read-only) |
 
-Odoo and n8n stay private (you reach them over SSH); show them with screenshots or a short
-video.
+DuckDNS answers for sub-names automatically, so `odoo.<name>.duckdns.org` needs no setup. Every
+deploy refreshes the read-only reviewer login and replaces Odoo's default admin password if it
+is still `admin` (`scripts/odoo-accounts.sh`, passwords in `/opt/propflow/.env`). n8n stays
+private (you reach it over SSH); show it with screenshots or a short video.
 
 ## AWS free plan (instead of sections 1 to 3)
 
@@ -200,7 +203,9 @@ during development.
    ssh -i ~/.ssh/propflow_oracle -L 8069:localhost:8069 -L 5678:localhost:5678 ubuntu@<public IP>
    ```
 
-   - <http://localhost:8069>: log in as `admin` / `admin` and **change the password at once**.
+   - <http://localhost:8069> (or `https://odoo.<name>.duckdns.org`): log in as `admin` with
+     `ODOO_ADMIN_PASSWORD` from `/opt/propflow/.env` (the deploy replaced the default), then
+     set your own password.
    - <http://localhost:5678>: create the n8n owner account.
 2. Send yourself through the demo: an inquiry on the buyer site, the captured emails at
    `/mail/`, the staff dashboard at `/staff` (token: `STAFF_TOKEN` in `/opt/propflow/.env`).

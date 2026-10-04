@@ -2,7 +2,7 @@
 PYTHON ?= python3
 SERVICE := services/ai-qualification
 
-.PHONY: help up down logs ps migrate odoo-init odoo-bootstrap odoo-seed odoo-update odoo-test n8n-import n8n-export eval scenarios retention docs lint test test-db seed-properties dataset
+.PHONY: help up down logs ps migrate odoo-init odoo-bootstrap odoo-seed odoo-accounts odoo-update odoo-test n8n-import n8n-export eval scenarios retention docs lint test test-db seed-properties dataset
 
 help:
 	@grep -E '^[a-z-]+:' Makefile | cut -d: -f1 | sort
@@ -32,6 +32,10 @@ odoo-bootstrap:
 # Demo sales team with fictional reps for round-robin (dev only)
 odoo-seed:
 	scripts/odoo-seed.sh
+
+# Public demo: read-only reviewer login; replaces a default admin password
+odoo-accounts:
+	scripts/odoo-accounts.sh
 
 # Apply propflow_crm code changes to the dev database
 odoo-update:

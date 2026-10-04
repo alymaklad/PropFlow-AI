@@ -15,6 +15,7 @@ one.
 | Buyer site | <https://propflow-demo.duckdns.org>: browse verified listings and send an inquiry |
 | Staff dashboard | <https://propflow-demo.duckdns.org/staff>: handoffs, reports, failed runs with replay (token on request) |
 | Mail viewer | <https://propflow-demo.duckdns.org/mail/>: every email the system sent, including staff notifications (password on request) |
+| Odoo CRM | <https://odoo.propflow-demo.duckdns.org>: the leads, scores, notes and activities PropFlow creates (read-only `reviewer` login on request) |
 
 All homes, people and data are fictional. Send an inquiry with your own email address and the
 reply arrives in your inbox (one email, no reminders); emails to the fictional staff are only

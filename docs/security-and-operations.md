@@ -17,6 +17,7 @@ customers are involved.
 | Customer text → LLM | Delimited as data, no tools, schema-only output, deterministic injection and opt-out detection as a backup. Model output never authorises an action: scores are rule-based and n8n decides what happens. |
 | Browser → service | Only through nginx, which proxies `/api/public` and `/api/staff` (not `/v1`). Public inquiries: validation, honeypot, 5 per client per 10 minutes, browser-generated idempotency key, signed server-side. Staff API: bearer `STAFF_TOKEN` (development-grade; use SSO in production). CSP, `X-Frame-Options: DENY`, `nosniff`. |
 | All published ports | Bound to `127.0.0.1` in development. |
+| Internet → Odoo (public demo only) | Caddy at `odoo.PUBLIC_HOST` with HTTPS; Odoo in proxy mode, one database, no database list; `/web/database`, `/xmlrpc` and `/jsonrpc` are not exposed. Reviewers use a read-only group (read leads, contacts, teams, stages, tags; no write, create, delete, notes or activities). Each deploy resets the reviewer password and replaces a default `admin` password. |
 
 ### Secrets
 

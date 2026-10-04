@@ -35,6 +35,8 @@ services:
       # Public inquiries per 24 hours across all visitors (protects the free LLM quota)
       PUBLIC_DAILY_LIMIT: ${PUBLIC_DAILY_LIMIT:-100}
       MAIL_VIEWER_PATH: /mail/
+      # Lead links in the dashboard and staff emails open the public Odoo
+      ODOO_PUBLIC_URL: https://odoo.${PUBLIC_HOST}
       # Listing photos in emails load from the buyer site
       PUBLIC_SITE_URL: https://${PUBLIC_HOST}
       # Set by deploy/enable-email.sh: customer emails really reach visitors (demo notice
@@ -49,6 +51,8 @@ services:
 
   odoo:
     mem_limit: 1536m
+    # Public at https://odoo.PUBLIC_HOST behind Caddy (reviewer login is read-only)
+    command: ["odoo", "--db-filter=^${ODOO_DB_NAME:-propflow_odoo}$$", "--no-database-list", "--proxy-mode"]
 
   odoo-db:
     mem_limit: 512m

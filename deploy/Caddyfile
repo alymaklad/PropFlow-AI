@@ -20,3 +20,21 @@
 		-Server
 	}
 }
+
+# Odoo CRM for reviewers (read-only "reviewer" login; see scripts/odoo-accounts.sh).
+# The database manager and the external XML-RPC/JSON-RPC APIs stay internal: the PropFlow
+# service talks to Odoo directly on the private network.
+odoo.{$PUBLIC_HOST} {
+	encode zstd gzip
+
+	@internal path /web/database* /xmlrpc* /jsonrpc*
+	respond @internal 404
+
+	reverse_proxy odoo:8069
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Frame-Options SAMEORIGIN
+		-Server
+	}
+}

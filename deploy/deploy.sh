@@ -53,6 +53,8 @@ main() {
       make -s n8n-import
     fi
   fi
+  # Odoo is public at odoo.PUBLIC_HOST: read-only reviewer login, never the default admin password
+  scripts/odoo-accounts.sh
   make -s seed-properties
 
   echo "==> Smoke test"
@@ -60,6 +62,8 @@ main() {
   curl -fsS --retry 10 --retry-delay 3 --retry-all-errors http://127.0.0.1:8000/readyz >/dev/null
   curl -fsS --retry 10 --retry-delay 3 --retry-all-errors \
     "https://${PUBLIC_HOST}/api/public/listings" >/dev/null
+  curl -fsS --retry 10 --retry-delay 3 --retry-all-errors \
+    "https://odoo.${PUBLIC_HOST}/web/login" >/dev/null
   docker image prune -f >/dev/null
   echo "==> Deployed $(git log -1 --format='%h') to https://${PUBLIC_HOST}"
 }
